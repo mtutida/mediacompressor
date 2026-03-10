@@ -34,15 +34,17 @@ jobs:
         pyinstaller --onefile --name MediaCompressor main.py
 
     - name: Read build counter
+      shell: pwsh
       run: |
-        BUILD=$(cat .build_counter)
-        echo "BUILD_NUMBER=$BUILD" >> $GITHUB_ENV
+        $BUILD = Get-Content .build_counter
+        echo "BUILD_NUMBER=$BUILD" >> $env:GITHUB_ENV
 
     - name: Increment build counter
+      shell: pwsh
       run: |
-        NEW_BUILD=$((BUILD_NUMBER + 1))
-        echo "NEW_BUILD=$NEW_BUILD" >> $GITHUB_ENV
-        echo $NEW_BUILD > .build_counter
+        $NEW_BUILD = [int]$env:BUILD_NUMBER + 1
+        echo "NEW_BUILD=$NEW_BUILD" >> $env:GITHUB_ENV
+        Set-Content .build_counter $NEW_BUILD
 
     - name: Update build counter in repo
       run: |
