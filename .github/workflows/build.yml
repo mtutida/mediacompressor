@@ -14,21 +14,10 @@ jobs:
 
       - name: Create ZIP build
         run: |
-          zip -r MediaCompressor_build.zip \
-          ancillary \
-          app \
-          core \
-          engine \
-          interaction_model \
-          models \
-          scheduler \
-          snapshot \
-          tools \
-          ui \
-          main.py \
-          app_orchestrator.py \
-          pyproject.toml \
-          requirements.txt
+          zip -r MediaCompressor_build.zip . \
+            -x "*.git*" \
+            -x ".github/*" \
+            -x "__pycache__/*"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
