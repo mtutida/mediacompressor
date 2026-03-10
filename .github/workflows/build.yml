@@ -53,19 +53,20 @@ jobs:
         git push
 
     - name: Create versioned ZIP
+      shell: pwsh
       run: |
         $VERSION="0.1"
-        $NAME="MediaCompressor_v${VERSION}_build{0:D3}.zip" -f $env:NEW_BUILD
+        $BUILD=$env:NEW_BUILD
+        $NAME="MediaCompressor_v$VERSION" + "_build" + "{0:D3}" -f $BUILD + ".zip"
     
-        Copy-Item dist/MediaCompressor.exe MediaCompressor.exe
+        if (!(Test-Path "dist/MediaCompressor.exe")) {
+            Write-Host "Executable not found!"
+            Get-ChildItem dist
+            exit 1
+        }
     
-        Compress-Archive MediaCompressor.exe $NAME
+        Copy-Item "dist/MediaCompressor.exe" "./MediaCompressor.exe"
+    
+        Compress-Archive -Path "MediaCompressor.exe" -DestinationPath $NAME -Force
     
         echo "ZIP_NAME=$NAME" >> $env:GITHUB_ENV
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: build-${{ env.NEW_BUILD }}
-        name: MediaCompressor build ${{ env.NEW_BUILD }}
-        files: ${{ env.ZIP_NAME }}
