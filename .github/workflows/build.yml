@@ -12,15 +12,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create ZIP build
+      - name: Read build counter
         run: |
-          zip -r MediaCompressor_build.zip . \
+          BUILD=$(cat .build_counter)
+          echo "BUILD_NUMBER=$BUILD" >> $GITHUB_ENV
+
+      - name: Increment build counter
+        run: |
+          NEW_BUILD=$((BUILD_NUMBER + 1))
+          echo $NEW_BUILD > .build_counter
+          echo "NEW_BUILD=$NEW_BUILD" >> $GITHUB_ENV
+
+      - name: Create versioned ZIP
+        run: |
+          VERSION="0.1"
+          NAME="MediaCompressor_v${VERSION}_build$(printf "%03d" $NEW_BUILD).zip"
+
+          zip -r $NAME . \
             -x "*.git*" \
             -x ".github/*" \
             -x "__pycache__/*"
 
+          echo "ZIP_NAME=$NAME" >> $GITHUB_ENV
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MediaCompressor_build
-          path: MediaCompressor_build.zip
+          name: build
+          path: ${{ env.ZIP_NAME }}
