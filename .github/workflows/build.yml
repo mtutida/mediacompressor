@@ -54,14 +54,14 @@ jobs:
 
     - name: Create versioned ZIP
       run: |
-        VERSION="0.1"
-        NAME="MediaCompressor_v${VERSION}_build$(printf "%03d" $NEW_BUILD).zip"
+        $VERSION="0.1"
+        $NAME="MediaCompressor_v${VERSION}_build{0:D3}.zip" -f $env:NEW_BUILD
     
-        cp dist/MediaCompressor.exe .
+        Copy-Item dist/MediaCompressor.exe MediaCompressor.exe
     
-        zip -r $NAME MediaCompressor.exe
+        Compress-Archive MediaCompressor.exe $NAME
     
-        echo "ZIP_NAME=$NAME" >> $GITHUB_ENV
+        echo "ZIP_NAME=$NAME" >> $env:GITHUB_ENV
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
