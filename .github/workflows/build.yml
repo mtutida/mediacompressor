@@ -29,6 +29,17 @@ jobs:
           echo $NEW_BUILD > .build_counter
           echo "NEW_BUILD=$NEW_BUILD" >> $GITHUB_ENV
 
+      - name: Update build counter in repo
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+      
+          echo $NEW_BUILD > .build_counter
+      
+          git add .build_counter
+          git commit -m "update build counter"
+          git push
+
       - name: Create versioned ZIP
         run: |
           VERSION="0.1"
