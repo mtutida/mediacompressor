@@ -15,46 +15,60 @@ jobs:
 
     steps:
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build executable
+      run: |
+        pyinstaller --onefile main.py
 
-      - name: Read build counter
-        run: |
-          BUILD=$(cat .build_counter)
-          echo "BUILD_NUMBER=$BUILD" >> $GITHUB_ENV
+    - name: Read build counter
+      run: |
+        BUILD=$(cat .build_counter)
+        echo "BUILD_NUMBER=$BUILD" >> $GITHUB_ENV
 
-      - name: Increment build counter
-        run: |
-          NEW_BUILD=$((BUILD_NUMBER + 1))
-          echo $NEW_BUILD > .build_counter
-          echo "NEW_BUILD=$NEW_BUILD" >> $GITHUB_ENV
+    - name: Increment build counter
+      run: |
+        NEW_BUILD=$((BUILD_NUMBER + 1))
+        echo $NEW_BUILD > .build_counter
+        echo "NEW_BUILD=$NEW_BUILD" >> $GITHUB_ENV
 
-      - name: Update build counter in repo
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-      
-          echo $NEW_BUILD > .build_counter
-      
-          git add .build_counter
-          git commit -m "update build counter"
-          git push
+    - name: Update build counter in repo
+      run: |
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+    
+        echo $NEW_BUILD > .build_counter
+    
+        git add .build_counter
+        git commit -m "update build counter"
+        git push
 
-      - name: Create versioned ZIP
-        run: |
-          VERSION="0.1"
-          NAME="MediaCompressor_v${VERSION}_build$(printf "%03d" $NEW_BUILD).zip"
+    - name: Create versioned ZIP
+      run: |
+        VERSION="0.1"
+        NAME="MediaCompressor_v${VERSION}_build$(printf "%03d" $NEW_BUILD).zip"
 
-          zip -r $NAME . \
-            -x "*.git*" \
-            -x ".github/*" \
-            -x "__pycache__/*"
+        zip -r $NAME . \
+          -x "*.git*" \
+          -x ".github/*" \
+          -x "__pycache__/*"
 
-          echo "ZIP_NAME=$NAME" >> $GITHUB_ENV
+        echo "ZIP_NAME=$NAME" >> $GITHUB_ENV
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ env.NEW_BUILD }}
-          name: MediaCompressor build ${{ env.NEW_BUILD }}
-          files: ${{ env.ZIP_NAME }}
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: build-${{ env.NEW_BUILD }}
+        name: MediaCompressor build ${{ env.NEW_BUILD }}
+        files: ${{ env.ZIP_NAME }}
