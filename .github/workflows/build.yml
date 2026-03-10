@@ -1,0 +1,23 @@
+name: Build MediaCompressor
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create ZIP build
+        run: |
+          zip -r MediaCompressor_build.zip .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MediaCompressor_build
+          path: MediaCompressor_build.zip
