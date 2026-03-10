@@ -58,12 +58,9 @@ jobs:
       run: |
         VERSION="0.1"
         NAME="MediaCompressor_v${VERSION}_build$(printf "%03d" $NEW_BUILD).zip"
-
-        zip -r $NAME . \
-          -x "*.git*" \
-          -x ".github/*" \
-          -x "__pycache__/*"
-
+    
+        zip -r $NAME dist/MediaCompressor.exe
+    
         echo "ZIP_NAME=$NAME" >> $GITHUB_ENV
 
     - name: Create Release
