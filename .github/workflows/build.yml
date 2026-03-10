@@ -57,7 +57,7 @@ jobs:
         VERSION="0.1"
         NAME="MediaCompressor_v${VERSION}_build$(printf "%03d" $NEW_BUILD).zip"
     
-        zip -r $NAME dist/MediaCompressor.exe
+        zip -r $NAME dist/
     
         echo "ZIP_NAME=$NAME" >> $GITHUB_ENV
 
