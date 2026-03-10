@@ -35,8 +35,9 @@ jobs:
 
           echo "ZIP_NAME=$NAME" >> $GITHUB_ENV
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: build
-          path: ${{ env.ZIP_NAME }}
+          tag_name: build-${{ env.NEW_BUILD }}
+          name: MediaCompressor build ${{ env.NEW_BUILD }}
+          files: ${{ env.ZIP_NAME }}
