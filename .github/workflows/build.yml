@@ -30,7 +30,10 @@ jobs:
 
     - name: Build executable
       run: |
-        pyinstaller --onefile main.py
+        pyinstaller \
+          --onefile \
+          --name MediaCompressor \
+          main.py
 
     - name: Read build counter
       run: |
