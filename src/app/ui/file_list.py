@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QColor
+from PySide6.QtGui import QPainter, QColor, QPen
 from PySide6.QtWidgets import QAbstractItemView, QListView, QStyleOptionViewItem
 
 from app.interaction_model.event_bridge import event_bridge
@@ -34,6 +34,9 @@ class FileList(QListView):
         self._hover_index = None
         self._hover_action = None
 
+        self._drag_active = False
+        self.setAcceptDrops(True)
+
         self.setStyleSheet(
             """
             QListView {
@@ -42,6 +45,26 @@ class FileList(QListView):
             }
             """
         )
+
+    
+    # ------------------------------------------------
+    # Drag highlight
+    # ------------------------------------------------
+
+    def dragEnterEvent(self, event):
+        self._drag_active = True
+        self.viewport().update()
+        event.acceptProposedAction()
+
+    def dragLeaveEvent(self, event):
+        self._drag_active = False
+        self.viewport().update()
+        event.accept()
+
+    def dropEvent(self, event):
+        self._drag_active = False
+        self.viewport().update()
+        event.acceptProposedAction()
 
     
     # ------------------------------------------------
@@ -63,13 +86,37 @@ class FileList(QListView):
         rect = self.viewport().rect()
         center_y = rect.center().y()
 
-        # Title
+        # Dropzone border
+        pen = QPen(QColor(90,90,90))
+        pen.setStyle(Qt.DashLine)
+        pen.setWidth(2)
+
+        if self._drag_active:
+            pen.setColor(QColor(120,170,255))
+
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+
+        drop_rect = rect.adjusted(40, 40, -40, -40)
+        painter.drawRoundedRect(drop_rect, 8, 8)
+
+        # Icon
         font = painter.font()
-        font.setPointSize(20)
-        font.setBold(True)
+        font.setPointSize(32)
         painter.setFont(font)
 
         painter.setPen(QColor(120,120,120))
+
+        painter.drawText(
+            rect.adjusted(0, center_y - 110, 0, 0),
+            Qt.AlignHCenter,
+            "⬆"
+        )
+
+        # Title
+        font.setPointSize(20)
+        font.setBold(True)
+        painter.setFont(font)
 
         painter.drawText(
             rect.adjusted(0, center_y - 60, 0, 0),
@@ -174,6 +221,9 @@ class FileList(QListView):
 
         self._hover_index = None
         self._hover_action = None
+
+        self._drag_active = False
+        self.setAcceptDrops(True)
 
         self.viewport().setCursor(Qt.ArrowCursor)
 
