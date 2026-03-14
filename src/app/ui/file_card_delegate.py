@@ -35,7 +35,7 @@ COLOR_PROGRESS_TRACK = QColor(20, 20, 20)
 CARD_HOVER = QColor(255, 255, 255, 20)
 CONTROL_HOVER_NEUTRAL = QColor(255, 255, 255, 30)
 CONTROL_HOVER_PRIMARY = QColor(70, 140, 255, 80)
-CONTROL_HOVER_DANGER = QColor(255, 80, 80, 70)
+CONTROL_HOVER_DANGER = QColor(220, 40, 40, 120)
 
 PRESSED_PRIMARY = QColor(40, 110, 220, 120)
 
@@ -128,12 +128,14 @@ class FileCardDelegate(QStyledItemDelegate):
 
     def draw_close(self, painter, rect):
 
-        painter.setPen(QPen(Qt.white, 1.2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        painter.setBrush(Qt.NoBrush)
-
-        cx = rect.center().x() + 1
+        cx = rect.center().x()
         cy = rect.center().y()
-        size = 5
+
+        size = 6
+
+        pen = QPen(Qt.white, 1.6, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
 
         painter.drawLine(cx - size, cy - size, cx + size, cy + size)
         painter.drawLine(cx + size, cy - size, cx - size, cy + size)
@@ -432,7 +434,10 @@ class FileCardDelegate(QStyledItemDelegate):
                     else:
                         painter.setBrush(CONTROL_HOVER_NEUTRAL)
 
-                    painter.drawRoundedRect(hover_rect.adjusted(-2, -2, 2, 2), 4, 4)
+                    painter.drawRoundedRect(hover_rect.adjusted(-3, -1, 2, 1), 4, 4)
+
+                    if action == "remove":
+                        self.draw_close(painter, hover_rect)
 
         if view and hasattr(view, "_hover_index"):
             if view._hover_index == index:
