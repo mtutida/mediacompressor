@@ -283,4 +283,13 @@ class AssistedImportDialog(QDialog):
     # ------------------------------------------------
 
     def _enqueue(self):
+
+        self.result_payload = {
+            "files": list(self.files),
+            "video_mode": self.v_mode_video.currentText(),
+            "video_format": self.v_container.currentText(),
+            "audio_mode": self.v_mode_audio.currentText(),
+            "audio_format": self.a_format.currentText(),
+        }
+
         self.accept()
