@@ -275,3 +275,31 @@ class FileListModel(QAbstractListModel):
                 self.endRemoveRows()
 
             self._rebuild_row_map()
+
+        # ------------------------------------------------
+        # CONFIGURATION CHANGED
+        # ------------------------------------------------
+
+        elif event_type == "configuration_changed":
+
+            try:
+                from app.core.output_naming import generate_output_path
+
+                for row, job in enumerate(self._items):
+
+                    source = getattr(job, "source_path", None)
+
+                    if source:
+                        job.output_path = generate_output_path(source)
+
+                        index = self.index(row)
+
+                        self.dataChanged.emit(
+                            index,
+                            index,
+                            [self.ROLE_FILE_NAME],
+                        )
+
+            except Exception:
+                pass
+
