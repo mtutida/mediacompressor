@@ -1,6 +1,8 @@
 
 from app.interaction_model.event_bridge import event_bridge
 from app.core.ffmpeg_engine import FFmpegCompressionEngine
+from app.core.output_naming import generate_output_path
+
 import threading
 
 
@@ -8,6 +10,7 @@ class RunController:
 
     def __init__(self):
         self.engine = FFmpegCompressionEngine()
+        self.jobs = []
         event_bridge.subscribe(self._on_event)
 
     def _on_event(self, event_type, payload):
@@ -15,12 +18,19 @@ class RunController:
         if event_type == "job_run_requested":
             job = payload if not isinstance(payload, dict) else payload.get("job")
             if job:
+                if job not in self.jobs:
+                    self.jobs.append(job)
                 self._prepare_job(job)
                 self._start_job(job)
 
-    # ---------------------------------------------------------
-    # Compatibility layer for UI job objects
-    # ---------------------------------------------------------
+        if event_type == "configuration_changed":
+            self._refresh_output_paths()
+
+    def _refresh_output_paths(self):
+        for job in list(self.jobs):
+            if hasattr(job, "source_path"):
+                job.output_path = generate_output_path(job.source_path)
+                event_bridge.emit("job_updated", {"job": job})
 
     def _prepare_job(self, job):
 
@@ -33,10 +43,8 @@ class RunController:
         if not hasattr(job, "progress"):
             job.progress = 0
 
-        # REAL progress bridge
         def set_progress(v):
             job.progress = int(v)
-
             event_bridge.emit("job_progress", {
                 "job": job,
                 "progress": job.progress
@@ -50,11 +58,10 @@ class RunController:
         if not hasattr(job, "is_cancel_requested"):
             job.is_cancel_requested = lambda: False
 
-    # ---------------------------------------------------------
-    # Execution
-    # ---------------------------------------------------------
-
     def _start_job(self, job):
+
+        job.output_path = generate_output_path(job.source_path)
+        event_bridge.emit("job_updated", {"job": job})
 
         t = threading.Thread(
             target=self._execute_job,

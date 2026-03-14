@@ -2,6 +2,7 @@
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QDialogButtonBox, QPushButton
 from app.ui.configuration_panel import ConfigurationPanelWidget
 from app.ancillary.configuration import ConfigurationService
+from app.interaction_model.event_bridge import event_bridge
 
 
 class ConfigurationOverlay(QDialog):
@@ -36,7 +37,6 @@ class ConfigurationOverlay(QDialog):
 
         import os
         from PySide6.QtWidgets import QMessageBox
-        from app.ancillary.configuration import ConfigurationService
 
         data = self.panel.collect_values()
         path = data["output_directory"]
@@ -70,5 +70,8 @@ Verifique permissões ou escolha outro caminho."""
                     return
 
         ConfigurationService.instance().update(**data)
+
+        # NOVO: avisar o sistema que as configurações mudaram
+        event_bridge.emit("configuration_changed", {})
 
         self.accept()

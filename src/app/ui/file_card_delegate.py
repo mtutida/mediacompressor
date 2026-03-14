@@ -326,7 +326,12 @@ class FileCardDelegate(QStyledItemDelegate):
             painter.drawRect(fill_rect)
 
         painter.setPen(Qt.white)
-        painter.drawText(progress_rect, Qt.AlignCenter, status_text)
+
+        display_text = status_text
+        if raw_status in ("RUNNING", "PROCESSING"):
+            display_text = f"{progress}%"
+
+        painter.drawText(progress_rect, Qt.AlignCenter, display_text)
 
         painter.setPen(QPen(QColor(120,120,120), 2))
         painter.drawLine(progress_rect.left(), progress_rect.top()+2, progress_rect.left(), progress_rect.bottom())
