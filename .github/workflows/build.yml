@@ -1,0 +1,74 @@
+name: Build MediaCompressor
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable
+      run: |
+        pyinstaller --onefile --name MediaCompressor main.py
+
+    - name: Read build counter
+      shell: pwsh
+      run: |
+        $BUILD = Get-Content .build_counter
+        echo "BUILD_NUMBER=$BUILD" >> $env:GITHUB_ENV
+
+    - name: Increment build counter
+      shell: pwsh
+      run: |
+        $NEW_BUILD = [int]$env:BUILD_NUMBER + 1
+        echo "NEW_BUILD=$NEW_BUILD" >> $env:GITHUB_ENV
+        Set-Content .build_counter $NEW_BUILD
+
+    - name: Update build counter in repo
+      run: |
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+        git add .build_counter
+        git commit -m "update build counter"
+        git push
+
+    - name: Create versioned ZIP
+      shell: pwsh
+      run: |
+        $VERSION="0.1"
+        $BUILD=$env:NEW_BUILD
+        $NAME="MediaCompressor_v$VERSION" + "_build" + "{0:D3}" -f $BUILD + ".zip"
+    
+        if (!(Test-Path "dist/MediaCompressor.exe")) {
+            Write-Host "Executable not found!"
+            Get-ChildItem dist
+            exit 1
+        }
+    
+        Copy-Item "dist/MediaCompressor.exe" "./MediaCompressor.exe"
+    
+        Compress-Archive -Path "MediaCompressor.exe" -DestinationPath $NAME -Force
+    
+        echo "ZIP_NAME=$NAME" >> $env:GITHUB_ENV

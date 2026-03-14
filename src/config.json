@@ -1,0 +1,9 @@
+{
+  "confirm_delete": true,
+  "auto_open_configuration_after_import": false,
+  "output_directory": "d:\\teste",
+  "use_source_directory": false,
+  "output_naming_mode": 0,
+  "output_suffix": "_compactado | ou digite seu pr\u00f3prio sufixo",
+  "output_filename_pattern": "{name}_compressed"
+}

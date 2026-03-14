@@ -1,0 +1,1 @@
+class UIDelegate: pass
