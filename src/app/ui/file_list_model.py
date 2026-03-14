@@ -1,4 +1,3 @@
-
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, QTimer
 import os
 
@@ -159,28 +158,13 @@ class FileListModel(QAbstractListModel):
             # BUILD OUTPUT PATH
             # ------------------------------------------------
             try:
-                from app.ancillary.configuration import ConfigurationService
-                cfg = ConfigurationService.instance().get()
+                from app.core.output_naming import generate_output_path
 
                 source = getattr(job, "source_path", None)
 
                 if source:
-                    base = os.path.basename(source)
-                    name, ext = os.path.splitext(base)
+                    job.output_path = generate_output_path(source)
 
-                    if cfg.use_source_directory:
-                        folder = os.path.dirname(source)
-                    else:
-                        folder = cfg.output_directory or os.path.dirname(source)
-
-                    if cfg.output_naming_mode == "suffix":
-                        filename = f"{name}{cfg.output_suffix}{ext}"
-                    elif cfg.output_naming_mode == "pattern":
-                        filename = cfg.output_filename_pattern.format(name=name) + ext
-                    else:
-                        filename = base
-
-                    job.output_path = os.path.normpath(os.path.join(folder, filename))
             except Exception:
                 pass
 
