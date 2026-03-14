@@ -1,3 +1,4 @@
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter, QColor, QPen
 from PySide6.QtWidgets import QAbstractItemView, QListView, QStyleOptionViewItem
@@ -34,19 +35,14 @@ class FileList(QListView):
         self._hover_index = None
         self._hover_action = None
 
+        # Drag state
         self._drag_active = False
         self.setAcceptDrops(True)
 
         self.setStyleSheet(
-            """
-            QListView {
-                background: transparent;
-                border: none;
-            }
-            """
+            "QListView { background: transparent; border: none; }"
         )
 
-    
     # ------------------------------------------------
     # Drag highlight
     # ------------------------------------------------
@@ -66,9 +62,8 @@ class FileList(QListView):
         self.viewport().update()
         event.acceptProposedAction()
 
-    
     # ------------------------------------------------
-    # EMPTY STATE
+    # EMPTY STATE (dropzone UI)
     # ------------------------------------------------
 
     def paintEvent(self, event):
@@ -86,13 +81,13 @@ class FileList(QListView):
         rect = self.viewport().rect()
         center_y = rect.center().y()
 
-        # Dropzone border
-        pen = QPen(QColor(90,90,90))
+        # dropzone border
+        pen = QPen(QColor(90, 90, 90))
         pen.setStyle(Qt.DashLine)
         pen.setWidth(2)
 
         if self._drag_active:
-            pen.setColor(QColor(120,170,255))
+            pen.setColor(QColor(120, 170, 255))
 
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
@@ -100,60 +95,62 @@ class FileList(QListView):
         drop_rect = rect.adjusted(40, 40, -40, -40)
         painter.drawRoundedRect(drop_rect, 8, 8)
 
-        # Icon
+        # icon
         font = painter.font()
-        font.setPointSize(32)
+        font.setPointSize(34)
         painter.setFont(font)
 
-        painter.setPen(QColor(120,120,120))
+        painter.setPen(QColor(120, 120, 120))
 
         painter.drawText(
-            rect.adjusted(0, center_y - 110, 0, 0),
+            rect.adjusted(0, center_y - 120, 0, 0),
             Qt.AlignHCenter,
             "⬆"
         )
 
-        # Title
+        # title
         font.setPointSize(20)
         font.setBold(True)
         painter.setFont(font)
 
+        title = "Solte os arquivos para adicionar" if self._drag_active else "Arraste arquivos aqui"
+
         painter.drawText(
-            rect.adjusted(0, center_y - 60, 0, 0),
+            rect.adjusted(0, center_y - 70, 0, 0),
             Qt.AlignHCenter,
-            "Arraste arquivos aqui"
+            title
         )
 
-        # Subtitle
+        # subtitle
         font.setPointSize(12)
         font.setBold(False)
         painter.setFont(font)
 
-        painter.setPen(QColor(130,130,130))
+        painter.setPen(QColor(130, 130, 130))
 
         painter.drawText(
-            rect.adjusted(0, center_y - 20, 0, 0),
+            rect.adjusted(0, center_y - 30, 0, 0),
             Qt.AlignHCenter,
             "ou use os botões acima"
         )
 
-        # Instructions
-        painter.setPen(QColor(100,100,100))
+        # instructions
+        painter.setPen(QColor(100, 100, 100))
 
         painter.drawText(
-            rect.adjusted(0, center_y + 10, 0, 0),
+            rect.adjusted(0, center_y + 0, 0, 0),
             Qt.AlignHCenter,
             "Adicionar → escolher arquivos e configurar saída"
         )
 
         painter.drawText(
-            rect.adjusted(0, center_y + 30, 0, 0),
+            rect.adjusted(0, center_y + 22, 0, 0),
             Qt.AlignHCenter,
             "Adicionar rápido → escolher arquivos e adicionar direto"
         )
 
         painter.drawText(
-            rect.adjusted(0, center_y + 50, 0, 0),
+            rect.adjusted(0, center_y + 44, 0, 0),
             Qt.AlignHCenter,
             "Importar pasta → adicionar todos os arquivos da pasta"
         )
@@ -181,10 +178,8 @@ class FileList(QListView):
 
             rects = self.delegate.get_action_rects(option, index)
 
-            # IMPORTANTE: usar pos direto
             for action, rect in rects.items():
 
-                # progress bar não é ação
                 if action == "progress":
                     continue
 
@@ -222,9 +217,6 @@ class FileList(QListView):
         self._hover_index = None
         self._hover_action = None
 
-        self._drag_active = False
-        self.setAcceptDrops(True)
-
         self.viewport().setCursor(Qt.ArrowCursor)
 
         super().leaveEvent(event)
@@ -253,16 +245,8 @@ class FileList(QListView):
         if job is None:
             return super().mousePressEvent(event)
 
-        # ------------------------------------------------
-        # PROGRESS BAR NÃO É CLICÁVEL
-        # ------------------------------------------------
-
         if rects["progress"].contains(pos):
             return
-
-        # ------------------------------------------------
-        # BOTÕES
-        # ------------------------------------------------
 
         if rects["run"].contains(pos):
             event_bridge.emit("job_run_requested", job)
@@ -279,10 +263,6 @@ class FileList(QListView):
         if rects["folder"].contains(pos):
             event_bridge.emit("job_open_folder_requested", job)
             return
-
-        # ------------------------------------------------
-        # BLOQUEAR SELEÇÃO NA COLUNA DE AÇÕES
-        # ------------------------------------------------
 
         action_column_start = item_rect.right() - self.delegate.ACTION_WIDTH
 
