@@ -85,12 +85,14 @@ class AssistedImportDialog(QDialog):
 
         # Drop hint overlay
         self.drop_hint = QLabel(
-            "Arraste arquivos aqui\nou clique em Adicionar + arquivos",
-            self.table
+            '<div style="text-align:center;">'
+            '<div style="font-size:16px;color:#888;">Arraste arquivos aqui</div>'
+            '<div style="font-size:13px;color:#AAA;">ou clique em Adicionar + arquivos</div>'
+            '</div>',
+            self.table.viewport()
         )
-        self.drop_hint.setWordWrap(True)
         self.drop_hint.setAlignment(Qt.AlignCenter)
-        self.drop_hint.setStyleSheet("color:#888;font-size:16px;")
+        self.drop_hint.setTextFormat(Qt.RichText)
         self.drop_hint.setAttribute(Qt.WA_TransparentForMouseEvents)
 
 
@@ -190,6 +192,7 @@ class AssistedImportDialog(QDialog):
         self.cancel_btn = QPushButton("Cancelar")
         self.add_btn = QPushButton("Enviar para fila")
         self.add_btn.setDefault(True)
+        self.add_btn.setEnabled(len(self.files) > 0)
 
         self.cancel_btn.clicked.connect(self.reject)
         self.add_btn.clicked.connect(self._enqueue)
@@ -201,17 +204,21 @@ class AssistedImportDialog(QDialog):
 
         self.update_header()
         self._update_drop_hint()
+        self.add_btn.setEnabled(len(self.files) > 0)
 
     # ------------------------------------------------
 
     def dragEnterEvent(self, event):
 
         if event.mimeData().hasUrls():
+            self.table.setStyleSheet("QTableView {border:2px dashed #4A90E2;}")
             event.acceptProposedAction()
         else:
             event.ignore()
 
     def dropEvent(self, event):
+
+        self.table.setStyleSheet("")
 
         if not event.mimeData().hasUrls():
             return
@@ -336,6 +343,7 @@ class AssistedImportDialog(QDialog):
 
         self.update_header()
         self._update_drop_hint()
+        self.add_btn.setEnabled(len(self.files) > 0)
 
     # ------------------------------------------------
 
