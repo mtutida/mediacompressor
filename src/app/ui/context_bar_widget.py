@@ -1,3 +1,4 @@
+
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton
 from app.interaction_model.event_bridge import event_bridge
 
@@ -8,6 +9,9 @@ class ContextBarWidget(QFrame):
 
         self.setObjectName("ContextBarWidget")
         self.setFixedHeight(28)
+
+        # registry of jobs currently known
+        self._jobs = {}
 
         layout=QHBoxLayout(self)
         layout.setContentsMargins(12,3,12,3)
@@ -28,6 +32,9 @@ class ContextBarWidget(QFrame):
         layout.addWidget(self.btn_remove_invalid)
 
         self.btn_remove_invalid.clicked.connect(self._remove_invalid)
+
+        # subscribe once to the global event bridge
+        event_bridge.subscribe(self._on_event)
 
         self.setStyleSheet("""
         QFrame#ContextBarWidget{
@@ -58,5 +65,68 @@ class ContextBarWidget(QFrame):
         }
         """)
 
+    # ------------------------------------------------
+
     def _remove_invalid(self):
         event_bridge.emit("remove_invalid_requested", None)
+
+    # ------------------------------------------------
+    # Event bridge entry point
+    # ------------------------------------------------
+
+    def _on_event(self, event_type, payload):
+
+        if not payload:
+            return
+
+        if event_type not in ("job_enqueued","job_updated"):
+            return
+
+        job = payload.get("job")
+        if not job:
+            return
+
+        key = getattr(job,"source_path",None) or id(job)
+        self._jobs[key] = job
+
+        self._update_stats()
+
+    # ------------------------------------------------
+
+    def _update_stats(self):
+
+        total = len(self._jobs)
+
+        active = 0
+        queued = 0
+        done = 0
+        error = 0
+
+        for job in self._jobs.values():
+
+            status = str(getattr(job,"status","")).upper()
+
+            if status in ("ANALYZING","PROCESSING","RUNNING"):
+                active += 1
+
+            elif status in ("READY","QUEUED"):
+                queued += 1
+
+            elif status in ("DONE","FINISHED","COMPLETED"):
+                done += 1
+
+            elif status in ("ERROR","FAILED"):
+                error += 1
+
+        if total == 0:
+            state = "Ocioso"
+        elif active > 0:
+            state = "Processando"
+        elif queued > 0:
+            state = "Na fila"
+        else:
+            state = "Finalizado"
+
+        self.label.setText(
+            f"{state} | {total} itens • {active} ativo • {queued} na fila • {done} concluído • {error} erro"
+        )
