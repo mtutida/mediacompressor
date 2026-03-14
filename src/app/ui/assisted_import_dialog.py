@@ -83,6 +83,17 @@ class AssistedImportDialog(QDialog):
         # ---------------- TABLE ----------------
         self.table = QTableView()
 
+        # Drop hint overlay
+        self.drop_hint = QLabel(
+            "Arraste arquivos aqui\nou clique em Adicionar + arquivos",
+            self.table
+        )
+        self.drop_hint.setWordWrap(True)
+        self.drop_hint.setAlignment(Qt.AlignCenter)
+        self.drop_hint.setStyleSheet("color:#888;font-size:16px;")
+        self.drop_hint.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+
         self.model = FileTableModel(self.files)
         self.table.setModel(self.model)
 
@@ -102,6 +113,8 @@ class AssistedImportDialog(QDialog):
         self.table.setColumnWidth(2,70)
 
         layout.addWidget(self.table)
+
+        self._update_drop_hint()
 
         self.del_shortcut = QShortcut(QKeySequence(Qt.Key_Delete), self.table)
         self.del_shortcut.activated.connect(self._remove_selected)
@@ -187,6 +200,7 @@ class AssistedImportDialog(QDialog):
         panels.addLayout(footer,1,0,1,2)
 
         self.update_header()
+        self._update_drop_hint()
 
     # ------------------------------------------------
 
@@ -321,8 +335,20 @@ class AssistedImportDialog(QDialog):
         sel_model.selectionChanged.connect(self._on_selection_changed)
 
         self.update_header()
+        self._update_drop_hint()
 
     # ------------------------------------------------
+
+    
+    # ------------------------------------------------
+
+    def _update_drop_hint(self):
+        if len(self.files) == 0:
+            self.drop_hint.show()
+            self.drop_hint.setGeometry(self.table.viewport().rect())
+        else:
+            self.drop_hint.hide()
+
 
     def _enqueue(self):
 
