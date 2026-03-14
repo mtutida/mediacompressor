@@ -429,8 +429,10 @@ class FileCardDelegate(QStyledItemDelegate):
 
                     painter.drawRoundedRect(hover_rect.adjusted(-2, -2, 2, 2), 4, 4)
 
+        # Card hover only when no control is being hovered
         if view and hasattr(view, "_hover_index"):
-            if view._hover_index == index:
+            hover_action = getattr(view, "_hover_action", None)
+            if view._hover_index == index and not hover_action:
                 painter.fillRect(card_rect, CARD_HOVER)
 
         if option.state & QStyle.State_Selected:

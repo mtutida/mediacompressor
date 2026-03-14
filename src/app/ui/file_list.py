@@ -65,11 +65,14 @@ class FileList(QListView):
 
             rects = self.delegate.get_action_rects(option, index)
 
-            # converter posição do mouse para coordenada do item
-            item_pos = pos - item_rect.topLeft()
-
+            # IMPORTANTE: usar pos direto
             for action, rect in rects.items():
-                if rect.contains(item_pos):
+
+                # progress bar não é ação
+                if action == "progress":
+                    continue
+
+                if rect.contains(pos):
                     hovered_action = action
                     break
 
@@ -81,7 +84,6 @@ class FileList(QListView):
         self._hover_index = index if index.isValid() else None
         self._hover_action = hovered_action
 
-        # repaint mínimo
         if prev_index != self._hover_index or prev_action != self._hover_action:
 
             if prev_index and prev_index.isValid():
@@ -127,27 +129,45 @@ class FileList(QListView):
 
         rects = self.delegate.get_action_rects(option, index)
 
-        item_pos = pos - item_rect.topLeft()
-
         job = index.data(self.delegate.ROLE_JOB)
 
         if job is None:
             return super().mousePressEvent(event)
 
-        if "run" in rects and rects["run"].contains(item_pos):
+        # ------------------------------------------------
+        # PROGRESS BAR NÃO É CLICÁVEL
+        # ------------------------------------------------
+
+        if rects["progress"].contains(pos):
+            return
+
+        # ------------------------------------------------
+        # BOTÕES
+        # ------------------------------------------------
+
+        if rects["run"].contains(pos):
             event_bridge.emit("job_run_requested", job)
             return
 
-        if "settings" in rects and rects["settings"].contains(item_pos):
+        if rects["settings"].contains(pos):
             event_bridge.emit("job_settings_requested", job)
             return
 
-        if "remove" in rects and rects["remove"].contains(item_pos):
+        if rects["remove"].contains(pos):
             event_bridge.emit("job_remove_requested", job)
             return
 
-        if "folder" in rects and rects["folder"].contains(item_pos):
+        if rects["folder"].contains(pos):
             event_bridge.emit("job_open_folder_requested", job)
+            return
+
+        # ------------------------------------------------
+        # BLOQUEAR SELEÇÃO NA COLUNA DE AÇÕES
+        # ------------------------------------------------
+
+        action_column_start = item_rect.right() - self.delegate.ACTION_WIDTH
+
+        if pos.x() >= action_column_start:
             return
 
         super().mousePressEvent(event)
