@@ -20,21 +20,6 @@ class ThumbCache(OrderedDict):
 
 THUMB_CACHE = ThumbCache()
 
-
-class ScaledThumbCache(OrderedDict):
-    MAX_ITEMS = 256
-
-    def __setitem__(self, key, value):
-        if key in self:
-            del self[key]
-        elif len(self) >= self.MAX_ITEMS:
-            self.popitem(last=False)
-        super().__setitem__(key, value)
-
-
-SCALED_THUMB_CACHE = ScaledThumbCache()
-
-
 COLOR_BG = QColor(43, 43, 43)
 COLOR_BORDER = QColor(90, 90, 90)
 COLOR_HEADER = QColor(53, 53, 53)
@@ -141,7 +126,7 @@ class FileCardDelegate(QStyledItemDelegate):
         painter.setPen(QPen(Qt.white, 1.2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.setBrush(Qt.NoBrush)
 
-        cx = rect.center().x() + 2
+        cx = rect.center().x() + 1
         cy = rect.center().y()
         size = 5
 
@@ -241,16 +226,11 @@ class FileCardDelegate(QStyledItemDelegate):
 
             if pix and not pix.isNull():
 
-                cache_key = (thumb, thumb_rect.width(), thumb_rect.height())
-                scaled = SCALED_THUMB_CACHE.get(cache_key)
-
-                if scaled is None:
-                    scaled = pix.scaled(
-                        thumb_rect.size(),
-                        Qt.KeepAspectRatioByExpanding,
-                        Qt.SmoothTransformation,
-                    )
-                    SCALED_THUMB_CACHE[cache_key] = scaled
+                scaled = pix.scaled(
+                    thumb_rect.size(),
+                    Qt.KeepAspectRatioByExpanding,
+                    Qt.SmoothTransformation,
+                )
 
                 painter.drawPixmap(thumb_rect, scaled)
 
