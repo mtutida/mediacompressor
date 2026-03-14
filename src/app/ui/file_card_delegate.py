@@ -264,11 +264,45 @@ class FileCardDelegate(QStyledItemDelegate):
 
         painter.setPen(Qt.white)
 
-        painter.drawText(
-            QRect(info_x, rect.top(), info_width, self.HEADER_HEIGHT),
-            Qt.AlignLeft | Qt.AlignVCenter,
-            metrics.elidedText(name, Qt.ElideRight, info_width),
-        )
+        
+
+        name_rect = QRect(info_x, rect.top(), info_width, self.HEADER_HEIGHT)
+
+        # detect LAST suffix pattern like:  [_something] .ext
+        suffix_start = name.rfind("[_")
+        suffix_end = name.rfind("]")
+
+        if suffix_start != -1 and suffix_end != -1 and suffix_end > suffix_start:
+            base = name[:suffix_start]
+            suffix = name[suffix_start:suffix_end+1]
+            ext = name[suffix_end+1:]
+
+            x = name_rect.left()
+
+            painter.setPen(Qt.white)
+            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                             Qt.AlignLeft | Qt.AlignVCenter, base)
+
+            base_width = metrics.horizontalAdvance(base)
+            x += base_width
+
+            painter.setPen(QColor(90, 140, 220))
+            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                             Qt.AlignLeft | Qt.AlignVCenter, suffix)
+
+            suffix_width = metrics.horizontalAdvance(suffix)
+            x += suffix_width
+
+            painter.setPen(Qt.white)
+            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                             Qt.AlignLeft | Qt.AlignVCenter, ext)
+
+        else:
+            painter.setPen(Qt.white)
+            painter.drawText(name_rect,
+                             Qt.AlignLeft | Qt.AlignVCenter,
+                             metrics.elidedText(name, Qt.ElideRight, info_width))
+
 
         folder_rect = actions["folder"]
 
