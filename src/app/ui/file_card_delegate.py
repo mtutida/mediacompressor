@@ -20,6 +20,21 @@ class ThumbCache(OrderedDict):
 
 THUMB_CACHE = ThumbCache()
 
+
+class ScaledThumbCache(OrderedDict):
+    MAX_ITEMS = 256
+
+    def __setitem__(self, key, value):
+        if key in self:
+            del self[key]
+        elif len(self) >= self.MAX_ITEMS:
+            self.popitem(last=False)
+        super().__setitem__(key, value)
+
+
+SCALED_THUMB_CACHE = ScaledThumbCache()
+
+
 COLOR_BG = QColor(43, 43, 43)
 COLOR_BORDER = QColor(90, 90, 90)
 COLOR_HEADER = QColor(53, 53, 53)
@@ -226,11 +241,16 @@ class FileCardDelegate(QStyledItemDelegate):
 
             if pix and not pix.isNull():
 
-                scaled = pix.scaled(
-                    thumb_rect.size(),
-                    Qt.KeepAspectRatioByExpanding,
-                    Qt.SmoothTransformation,
-                )
+                cache_key = (thumb, thumb_rect.width(), thumb_rect.height())
+                scaled = SCALED_THUMB_CACHE.get(cache_key)
+
+                if scaled is None:
+                    scaled = pix.scaled(
+                        thumb_rect.size(),
+                        Qt.KeepAspectRatioByExpanding,
+                        Qt.SmoothTransformation,
+                    )
+                    SCALED_THUMB_CACHE[cache_key] = scaled
 
                 painter.drawPixmap(thumb_rect, scaled)
 
@@ -429,10 +449,8 @@ class FileCardDelegate(QStyledItemDelegate):
 
                     painter.drawRoundedRect(hover_rect.adjusted(-2, -2, 2, 2), 4, 4)
 
-        # Card hover only when no control is being hovered
         if view and hasattr(view, "_hover_index"):
-            hover_action = getattr(view, "_hover_action", None)
-            if view._hover_index == index and not hover_action:
+            if view._hover_index == index:
                 painter.fillRect(card_rect, CARD_HOVER)
 
         if option.state & QStyle.State_Selected:
