@@ -83,7 +83,12 @@ class FileCardDelegate(QStyledItemDelegate):
         rect = option.rect.adjusted(6, 4, -6, -4)
         action_x = rect.right() - self.ACTION_WIDTH
 
-        close = QRect(rect.right() - 28, rect.top() + 4, 20, 20)
+        close = QRect(
+            rect.right() - 26,
+            rect.top() + (self.HEADER_HEIGHT - 20) // 2,
+            24,
+            20,
+        )
 
         settings = QRect(
             action_x - 34,
