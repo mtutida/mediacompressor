@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import QAbstractItemView, QListView, QStyleOptionViewItem
 
 from app.interaction_model.event_bridge import event_bridge
@@ -40,6 +41,74 @@ class FileList(QListView):
                 border: none;
             }
             """
+        )
+
+    
+    # ------------------------------------------------
+    # EMPTY STATE
+    # ------------------------------------------------
+
+    def paintEvent(self, event):
+
+        super().paintEvent(event)
+
+        model = self.model()
+
+        if not model or model.rowCount() != 0:
+            return
+
+        painter = QPainter(self.viewport())
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        rect = self.viewport().rect()
+        center_y = rect.center().y()
+
+        # Title
+        font = painter.font()
+        font.setPointSize(20)
+        font.setBold(True)
+        painter.setFont(font)
+
+        painter.setPen(QColor(120,120,120))
+
+        painter.drawText(
+            rect.adjusted(0, center_y - 60, 0, 0),
+            Qt.AlignHCenter,
+            "Arraste arquivos aqui"
+        )
+
+        # Subtitle
+        font.setPointSize(12)
+        font.setBold(False)
+        painter.setFont(font)
+
+        painter.setPen(QColor(130,130,130))
+
+        painter.drawText(
+            rect.adjusted(0, center_y - 20, 0, 0),
+            Qt.AlignHCenter,
+            "ou use os botões acima"
+        )
+
+        # Instructions
+        painter.setPen(QColor(100,100,100))
+
+        painter.drawText(
+            rect.adjusted(0, center_y + 10, 0, 0),
+            Qt.AlignHCenter,
+            "Adicionar → escolher arquivos e configurar saída"
+        )
+
+        painter.drawText(
+            rect.adjusted(0, center_y + 30, 0, 0),
+            Qt.AlignHCenter,
+            "Adicionar rápido → escolher arquivos e adicionar direto"
+        )
+
+        painter.drawText(
+            rect.adjusted(0, center_y + 50, 0, 0),
+            Qt.AlignHCenter,
+            "Importar pasta → adicionar todos os arquivos da pasta"
         )
 
     # ------------------------------------------------
