@@ -29,7 +29,7 @@ def generate_output_path(input_path):
 
         # fallback if user left suffix empty
         if not suffix:
-            suffix = "_compressed"
+            suffix = "_compactado"
 
         if not suffix.startswith("_"):
             suffix = "_" + suffix
