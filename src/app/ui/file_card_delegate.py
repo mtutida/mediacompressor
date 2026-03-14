@@ -196,8 +196,8 @@ class FileCardDelegate(QStyledItemDelegate):
 
         progress = getattr(job, "progress", 0)
 
-        dest = getattr(job, "output_path", None) or getattr(job, "source_path", "")
-        dest = os.path.normpath(dest)
+        dest_path = getattr(job, "output_path", None) or getattr(job, "source_path", "")
+        dest = os.path.dirname(os.path.normpath(dest_path))
 
         thumb = getattr(job, "thumbnail", None)
 
