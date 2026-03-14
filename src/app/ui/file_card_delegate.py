@@ -161,7 +161,31 @@ class FileCardDelegate(QStyledItemDelegate):
 
         view = option.widget
 
+        
+        source = getattr(job, "source_path", None)
+        output_path = getattr(job, "output_path", None)
+
         name = getattr(job, "file_name", "unknown")
+
+        try:
+            if source and output_path:
+                src_base = os.path.basename(source)
+                src_name, src_ext = os.path.splitext(src_base)
+
+                out_base = os.path.basename(output_path)
+                out_name, out_ext = os.path.splitext(out_base)
+
+                if src_ext == out_ext and out_name.startswith(src_name):
+                    suffix = out_name[len(src_name):]
+                    if suffix:
+                        name = f"{src_name} [{suffix}] {src_ext}"
+                    else:
+                        name = out_base
+                else:
+                    name = out_base
+        except Exception:
+            pass
+
         status = getattr(job, "status", "READY")
 
         codec = getattr(job, "codec", "?")
