@@ -28,14 +28,14 @@ AUDIO_EXTENSIONS = (
     ".mp3",".aac",".wav",".flac",".ogg",".m4a",".wma",".opus",".alac"
 )
 
+VIDEO_EXTENSIONS = (
+    ".mp4",".mkv",".webm",".mov",".avi",".flv",".ts",".m4v"
+)
+
+SUPPORTED_EXTENSIONS = AUDIO_EXTENSIONS + VIDEO_EXTENSIONS
+
 
 def natural_key(path):
-    """
-    Natural sort key so:
-    1.mp4
-    2.mp4
-    10.mp4
-    """
     name = os.path.basename(path).lower()
     return [
         int(text) if text.isdigit() else text
@@ -52,6 +52,9 @@ class AssistedImportDialog(QDialog):
 
         self.setWindowTitle("Importação Assistida")
         self.resize(620, 540)
+
+        # Enable drag & drop on dialog
+        self.setAcceptDrops(True)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18,18,18,18)
@@ -173,6 +176,7 @@ class AssistedImportDialog(QDialog):
 
         self.cancel_btn = QPushButton("Cancelar")
         self.add_btn = QPushButton("Enviar para fila")
+        self.add_btn.setDefault(True)
 
         self.cancel_btn.clicked.connect(self.reject)
         self.add_btn.clicked.connect(self._enqueue)
@@ -183,6 +187,33 @@ class AssistedImportDialog(QDialog):
         panels.addLayout(footer,1,0,1,2)
 
         self.update_header()
+
+    # ------------------------------------------------
+
+    def dragEnterEvent(self, event):
+
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+
+        if not event.mimeData().hasUrls():
+            return
+
+        paths = []
+
+        for url in event.mimeData().urls():
+            path = url.toLocalFile()
+
+            if path and os.path.isfile(path):
+                paths.append(path)
+
+        if paths:
+            self._add_paths(paths)
+
+        event.acceptProposedAction()
 
     # ------------------------------------------------
 
@@ -237,6 +268,30 @@ class AssistedImportDialog(QDialog):
 
     # ------------------------------------------------
 
+    def _add_paths(self, paths):
+
+        added = False
+
+        for p in paths:
+
+            ext = os.path.splitext(p)[1].lower()
+
+            if ext not in SUPPORTED_EXTENSIONS:
+                continue
+
+            if p not in self.files:
+                self.files.append(p)
+                added = True
+
+        if not added:
+            return
+
+        self.files.sort(key=natural_key)
+
+        self._refresh_table()
+
+    # ------------------------------------------------
+
     def _add_files(self):
 
         filters = (
@@ -251,20 +306,7 @@ class AssistedImportDialog(QDialog):
         if not paths:
             return
 
-        added = False
-
-        for p in paths:
-            if p not in self.files:
-                self.files.append(p)
-                added = True
-
-        if not added:
-            return
-
-        # NATURAL SORT
-        self.files.sort(key=natural_key)
-
-        self._refresh_table()
+        self._add_paths(paths)
 
     # ------------------------------------------------
 
