@@ -29,6 +29,8 @@ class AppShell(QWidget):
 
         self._build_ui()
 
+        # Toast UI
+        from app.ui.toast_manager import ToastManager
         self.toast = ToastManager(self)
 
         self.update_window_title()
@@ -49,7 +51,7 @@ class AppShell(QWidget):
 
         self.selection_controller = SelectionController(self.file_list)
 
-        self.execution_footer = ExecutionFooterWidget()
+        self.execution_footer = ExecutionFooterWidget(self.file_list)
         self.global_progress = GlobalProgressWidget()
 
         self.content = QWidget()
