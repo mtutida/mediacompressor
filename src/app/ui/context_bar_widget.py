@@ -1,12 +1,9 @@
 
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton, QListView
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton
 from app.interaction_model.event_bridge import event_bridge
 
 
 class ContextBarWidget(QFrame):
-
-    ROLE_JOB = Qt.UserRole + 1
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -14,29 +11,31 @@ class ContextBarWidget(QFrame):
         self.setObjectName("ContextBarWidget")
         self.setFixedHeight(28)
 
+        # registry of jobs
+        self._jobs = {}
+
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 3, 12, 3)
         layout.setSpacing(6)
 
         self.label = QLabel()
+        self.label.setContentsMargins(0, 0, 4, 0)
+
         layout.addWidget(self.label)
         layout.addStretch()
 
+        # maintenance action
         self.btn_remove_invalid = QToolButton()
         self.btn_remove_invalid.setText("Remover inválidos")
         self.btn_remove_invalid.setAutoRaise(True)
         self.btn_remove_invalid.setFixedHeight(20)
+
         layout.addWidget(self.btn_remove_invalid)
 
         self.btn_remove_invalid.clicked.connect(self._remove_invalid)
 
-        # refresh when queue events occur
+        # subscribe to global bridge
         event_bridge.subscribe(self._on_event)
-
-        # safety refresh (covers cases where model changes without events)
-        self._timer = QTimer(self)
-        self._timer.timeout.connect(self._update_stats)
-        self._timer.start(800)
 
         self.setStyleSheet("""
         QFrame#ContextBarWidget{
@@ -76,23 +75,25 @@ class ContextBarWidget(QFrame):
         event_bridge.emit("remove_invalid_requested", None)
 
     # ------------------------------------------------
-
-    def _on_event(self, event_type, payload):
-        if event_type in (
-            "job_enqueued",
-            "job_updated",
-            "job_removed",
-            "queue_cleared",
-        ):
-            self._update_stats()
-
+    # Event bridge
     # ------------------------------------------------
 
-    def _get_file_list(self):
-        window = self.window()
-        if not window:
-            return None
-        return window.findChild(QListView, "FileList")
+    def _on_event(self, event_type, payload):
+
+        if not payload:
+            return
+
+        if event_type not in ("job_enqueued", "job_updated"):
+            return
+
+        job = payload.get("job")
+        if not job:
+            return
+
+        key = getattr(job, "source_path", None) or id(job)
+        self._jobs[key] = job
+
+        self._update_stats()
 
     # ------------------------------------------------
 
@@ -119,28 +120,14 @@ class ContextBarWidget(QFrame):
 
     def _update_stats(self):
 
-        file_list = self._get_file_list()
-        if not file_list:
-            return
-
-        model = file_list.model()
-        if not model:
-            return
-
-        total = model.rowCount()
+        total = len(self._jobs)
 
         active = 0
         queued = 0
         done = 0
         error = 0
 
-        for row in range(total):
-
-            index = model.index(row, 0)
-            job = index.data(self.ROLE_JOB)
-
-            if not job:
-                continue
+        for job in self._jobs.values():
 
             status = str(getattr(job, "status", "")).upper()
 
@@ -162,11 +149,11 @@ class ContextBarWidget(QFrame):
 
         text = (
             f"{dot} {state}"
-            f"   |   Itens: {total}"
-            f"   |   Ativo: {active}"
-            f"   |   Fila: {queued}"
-            f"   |   Concluído: {done}"
-            f"   |   Erro: {error}"
+            f" | Itens: {total}"
+            f" | Ativo: {active}"
+            f" | Fila: {queued}"
+            f" | Concluído: {done}"
+            f" | Erro: {error}"
         )
 
         self.label.setText(text)

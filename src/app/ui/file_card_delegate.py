@@ -3,10 +3,8 @@ import os
 from collections import OrderedDict
 
 from PySide6.QtCore import QRect, QSize, Qt
-from PySide6.QtGui import QPainter, QPen, QPixmap
+from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QStyledItemDelegate, QStyle
-
-from app.ui.ui_palette import UIPalette
 
 
 class ThumbCache(OrderedDict):
@@ -22,6 +20,35 @@ class ThumbCache(OrderedDict):
 
 THUMB_CACHE = ThumbCache()
 
+COLOR_BG = QColor(43, 43, 43)
+COLOR_BORDER = QColor(90, 90, 90)
+COLOR_HEADER = QColor(53, 53, 53)
+
+COLOR_TEXT = QColor(220, 220, 220)
+COLOR_META = QColor(170, 170, 170)
+
+COLOR_SEPARATOR = QColor(70, 70, 70)
+
+COLOR_ACTION_PRIMARY = QColor(90, 140, 220)
+COLOR_PROGRESS_TRACK = QColor(20, 20, 20)
+
+CARD_HOVER = QColor(255, 255, 255, 20)
+CONTROL_HOVER_NEUTRAL = QColor(255, 255, 255, 30)
+CONTROL_HOVER_PRIMARY = QColor(70, 140, 255, 80)
+CONTROL_HOVER_DANGER = QColor(220, 40, 40, 120)
+
+PRESSED_PRIMARY = QColor(40, 110, 220, 120)
+
+STATUS_COLORS = {
+    "READY": QColor(150, 150, 150),
+    "ANALYZING": QColor(70, 130, 220),
+    "PROCESSING": QColor(0, 180, 0),
+    "RUNNING": QColor(0, 180, 0),
+    "DONE": QColor(0, 200, 120),
+    "COMPLETED": QColor(0, 200, 120),
+    "ERROR": QColor(200, 60, 60),
+    "FAILED": QColor(200, 60, 60),
+}
 
 STATUS_TEXT_MAP = {
     "READY": "PRONTO",
@@ -56,27 +83,40 @@ class FileCardDelegate(QStyledItemDelegate):
         rect = option.rect.adjusted(6, 4, -6, -4)
         action_x = rect.right() - self.ACTION_WIDTH
 
-        close = QRect(rect.right() - 26,
-                      rect.top() + (self.HEADER_HEIGHT - 20) // 2,
-                      24, 20)
+        close = QRect(
+            rect.right() - 26,
+            rect.top() + (self.HEADER_HEIGHT - 20) // 2,
+            24,
+            20,
+        )
 
-        settings = QRect(action_x - 34,
-                         rect.top() + self.HEADER_HEIGHT + self.ROW_HEIGHT + 6,
-                         22, 22)
+        settings = QRect(
+            action_x - 34,
+            rect.top() + self.HEADER_HEIGHT + self.ROW_HEIGHT + 6,
+            22,
+            22,
+        )
 
-        folder = QRect(action_x - 34,
-                       rect.top() + self.HEADER_HEIGHT + 6,
-                       22, 22)
+        folder = QRect(
+            action_x - 34,
+            rect.top() + self.HEADER_HEIGHT + 6,
+            22,
+            22,
+        )
 
-        run = QRect(action_x + 10,
-                    rect.top() + self.HEADER_HEIGHT + 10,
-                    self.ACTION_WIDTH - 20,
-                    18)
+        run = QRect(
+            action_x + 10,
+            rect.top() + self.HEADER_HEIGHT + 10,
+            self.ACTION_WIDTH - 20,
+            18,
+        )
 
-        progress = QRect(action_x + 10,
-                         rect.bottom() - self.PROGRESS_HEIGHT - 5,
-                         self.ACTION_WIDTH - 20,
-                         self.PROGRESS_HEIGHT)
+        progress = QRect(
+            action_x + 10,
+            rect.bottom() - self.PROGRESS_HEIGHT - 5,
+            self.ACTION_WIDTH - 20,
+            self.PROGRESS_HEIGHT,
+        )
 
         return {
             "folder": folder,
@@ -90,6 +130,7 @@ class FileCardDelegate(QStyledItemDelegate):
 
         cx = rect.center().x()
         cy = rect.center().y()
+
         size = 6
 
         pen = QPen(Qt.white, 1.6, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
@@ -100,9 +141,14 @@ class FileCardDelegate(QStyledItemDelegate):
         painter.drawLine(cx + size, cy - size, cx - size, cy + size)
 
     def _normalize_status(self, status):
-        text = str(status)
+        text = status
+
+        if not isinstance(text, str):
+            text = str(text)
+
         if "." in text:
             text = text.split(".")[-1]
+
         return STATUS_TEXT_MAP.get(text, text), text
 
     def paint(self, painter, option, index):
@@ -122,110 +168,282 @@ class FileCardDelegate(QStyledItemDelegate):
 
         view = option.widget
 
+        
+        source = getattr(job, "source_path", None)
+        output_path = getattr(job, "output_path", None)
+
         name = getattr(job, "file_name", "unknown")
+
+        try:
+            if source and output_path:
+                src_base = os.path.basename(source)
+                src_name, src_ext = os.path.splitext(src_base)
+
+                out_base = os.path.basename(output_path)
+                out_name, out_ext = os.path.splitext(out_base)
+
+                if src_ext == out_ext and out_name.startswith(src_name):
+                    suffix = out_name[len(src_name):]
+                    if suffix:
+                        name = f"{src_name} [{suffix}] {src_ext}"
+                    else:
+                        name = out_base
+                else:
+                    name = out_base
+        except Exception:
+            pass
+
         status = getattr(job, "status", "READY")
+
         codec = getattr(job, "codec", "?")
         resolution = getattr(job, "resolution", "?")
         fps = getattr(job, "fps", "?")
         duration = getattr(job, "duration", "?")
         container = getattr(job, "container", "?")
+
         progress = getattr(job, "progress", 0)
+
+        dest_path = getattr(job, "output_path", None) or getattr(job, "source_path", "")
+        dest = os.path.dirname(os.path.normpath(dest_path))
+
         thumb = getattr(job, "thumbnail", None)
 
         status_text, raw_status = self._normalize_status(status)
-        status_color = UIPalette.STATUS_COLORS.get(raw_status, UIPalette.STATUS_READY)
+        status_color = STATUS_COLORS.get(raw_status, QColor(120, 120, 120))
 
-        painter.fillRect(card_rect, UIPalette.CARD_BG)
-        painter.setPen(UIPalette.CARD_BORDER)
+        painter.fillRect(card_rect, COLOR_BG)
+        painter.setPen(COLOR_BORDER)
         painter.drawRect(rect)
 
-        thumb_rect = QRect(rect.left() + 1,
-                           rect.top() + 1,
-                           self.THUMB_WIDTH - 2,
-                           rect.height() - 2)
+        thumb_rect = QRect(
+            rect.left() + 1,
+            rect.top() + 1,
+            self.THUMB_WIDTH - 2,
+            rect.height() - 2,
+        )
 
         if thumb and os.path.exists(thumb):
+
             pix = THUMB_CACHE.get(thumb)
+
             if pix is None:
                 pix = QPixmap()
                 if pix.load(thumb):
                     THUMB_CACHE[thumb] = pix
 
             if pix and not pix.isNull():
-                scaled = pix.scaled(thumb_rect.size(),
-                                    Qt.KeepAspectRatioByExpanding,
-                                    Qt.SmoothTransformation)
+
+                scaled = pix.scaled(
+                    thumb_rect.size(),
+                    Qt.KeepAspectRatioByExpanding,
+                    Qt.SmoothTransformation,
+                )
+
                 painter.drawPixmap(thumb_rect, scaled)
 
         action_x = rect.right() - self.ACTION_WIDTH
+
         info_x = rect.left() + self.THUMB_WIDTH + 12
         info_width = action_x - info_x - 8
 
-        painter.setPen(QPen(UIPalette.SEPARATOR, 1))
-        painter.drawLine(action_x - 4, rect.top() + 6, action_x - 4, rect.bottom() - 6)
+        painter.setPen(QPen(COLOR_SEPARATOR, 1))
 
-        header_rect = QRect(rect.left() + self.THUMB_WIDTH,
-                            rect.top(),
-                            rect.width() - self.THUMB_WIDTH,
-                            self.HEADER_HEIGHT)
+        painter.drawLine(
+            action_x - 4,
+            rect.top() + 6,
+            action_x - 4,
+            rect.bottom() - 6,
+        )
 
-        painter.fillRect(header_rect, UIPalette.CARD_HEADER)
+        header_rect = QRect(
+            rect.left() + self.THUMB_WIDTH,
+            rect.top(),
+            rect.width() - self.THUMB_WIDTH,
+            self.HEADER_HEIGHT,
+        )
+
+        painter.fillRect(header_rect, COLOR_HEADER)
+
+        painter.setPen(QPen(COLOR_SEPARATOR, 1))
+        painter.drawRect(header_rect)
 
         metrics = painter.fontMetrics()
 
-        painter.setPen(UIPalette.TEXT)
+        painter.setPen(Qt.white)
+
+        
+
         name_rect = QRect(info_x, rect.top(), info_width, self.HEADER_HEIGHT)
-        painter.drawText(name_rect,
-                         Qt.AlignLeft | Qt.AlignVCenter,
-                         metrics.elidedText(name, Qt.ElideRight, info_width))
+
+        # detect LAST suffix pattern like:  [_something] .ext
+        suffix_start = name.rfind("[_")
+        suffix_end = name.rfind("]")
+
+        if suffix_start != -1 and suffix_end != -1 and suffix_end > suffix_start:
+            base = name[:suffix_start]
+            suffix = name[suffix_start:suffix_end+1]
+            ext = name[suffix_end+1:]
+
+            x = name_rect.left()
+
+            painter.setPen(Qt.white)
+            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                             Qt.AlignLeft | Qt.AlignVCenter, base)
+
+            base_width = metrics.horizontalAdvance(base)
+            x += base_width
+
+            painter.setPen(QColor(90, 140, 220))
+            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                             Qt.AlignLeft | Qt.AlignVCenter, suffix)
+
+            suffix_width = metrics.horizontalAdvance(suffix)
+            x += suffix_width
+
+            painter.setPen(Qt.white)
+            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                             Qt.AlignLeft | Qt.AlignVCenter, ext)
+
+        else:
+            painter.setPen(Qt.white)
+            painter.drawText(name_rect,
+                             Qt.AlignLeft | Qt.AlignVCenter,
+                             metrics.elidedText(name, Qt.ElideRight, info_width))
+
+
+        folder_rect = actions["folder"]
+
+        path_rect = QRect(
+            info_x,
+            rect.top() + self.HEADER_HEIGHT + 4,
+            folder_rect.left() - info_x - 8,
+            self.ROW_HEIGHT,
+        )
+
+        painter.setPen(COLOR_TEXT)
+
+        painter.drawText(
+            path_rect,
+            Qt.AlignLeft | Qt.AlignVCenter,
+            metrics.elidedText(dest, Qt.ElideMiddle, path_rect.width())
+        )
 
         metadata = f"{codec} • {resolution} • {fps}fps • {duration} • {container}"
 
-        meta_rect = QRect(info_x,
-                          rect.top() + self.HEADER_HEIGHT + 4,
-                          info_width,
-                          self.ROW_HEIGHT)
+        meta_rect = QRect(
+            info_x,
+            path_rect.bottom(),
+            info_width,
+            self.ROW_HEIGHT,
+        )
 
-        painter.setPen(UIPalette.META)
+        painter.setPen(COLOR_META)
         painter.drawText(meta_rect, Qt.AlignLeft | Qt.AlignVCenter, metadata)
+
+        painter.setPen(Qt.white)
+
+        original_font = painter.font()
+
+        icon_font = painter.font()
+        icon_font.setPointSize(icon_font.pointSize() + 2)
+        painter.setFont(icon_font)
+
+        painter.drawText(actions["folder"], Qt.AlignCenter, "📂")
+        painter.drawText(actions["settings"], Qt.AlignCenter, "⚙")
+
+        painter.setFont(original_font)
+
+        self.draw_close(painter, actions["remove"])
 
         run_rect = actions["run"]
 
         painter.setBrush(Qt.NoBrush)
-        painter.setPen(QPen(UIPalette.PRIMARY, 1))
+        painter.setPen(QPen(COLOR_ACTION_PRIMARY, 1))
         painter.drawRoundedRect(run_rect, 3, 3)
 
         painter.setPen(Qt.white)
+
+        font = painter.font()
+        font.setPointSize(font.pointSize() - 1)
+        painter.setFont(font)
+
         painter.drawText(run_rect, Qt.AlignCenter, "▶  Comprimir")
 
         progress_rect = actions["progress"]
 
         painter.setPen(Qt.NoPen)
-        painter.setBrush(UIPalette.PROGRESS_TRACK)
+        painter.setBrush(COLOR_PROGRESS_TRACK)
         painter.drawRect(progress_rect)
 
         progress = max(0, min(progress, 100))
         fill = int(progress_rect.width() * (progress / 100))
 
         if fill > 0:
-            fill_rect = QRect(progress_rect.left(),
-                              progress_rect.top(),
-                              fill,
-                              progress_rect.height())
+
+            fill_rect = QRect(
+                progress_rect.left(),
+                progress_rect.top(),
+                fill,
+                progress_rect.height(),
+            )
+
             painter.setBrush(status_color)
             painter.drawRect(fill_rect)
 
         painter.setPen(Qt.white)
+
         display_text = status_text
         if raw_status in ("RUNNING", "PROCESSING"):
             display_text = f"{progress}%"
 
         painter.drawText(progress_rect, Qt.AlignCenter, display_text)
 
-        if view and hasattr(view, "_hover_index") and view._hover_index and view._hover_index == index:
-            painter.fillRect(card_rect, UIPalette.CARD_HOVER)
+        painter.setPen(QPen(QColor(120,120,120), 2))
+        painter.drawLine(progress_rect.left(), progress_rect.top()+2, progress_rect.left(), progress_rect.bottom())
+        painter.drawLine(progress_rect.right(), progress_rect.top()+2, progress_rect.right(), progress_rect.bottom())
+
+        painter.setPen(QPen(QColor(90,90,90), 1))
+        painter.drawLine(
+            progress_rect.left()+2,
+            progress_rect.top()+1,
+            progress_rect.right()-2,
+            progress_rect.top()+1
+        )
+
+        if view:
+
+            if hasattr(view, "_pressed_index") and view._pressed_index == index and view._pressed_action == "run":
+
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(PRESSED_PRIMARY)
+                painter.drawRoundedRect(run_rect.adjusted(-1, -1, 1, 1), 3, 3)
+
+            elif hasattr(view, "_hover_index") and view._hover_index == index and view._hover_action:
+
+                action = view._hover_action
+                hover_rect = actions.get(action)
+
+                if hover_rect:
+
+                    painter.setPen(Qt.NoPen)
+
+                    if action == "run":
+                        painter.setBrush(CONTROL_HOVER_PRIMARY)
+                    elif action == "remove":
+                        painter.setBrush(CONTROL_HOVER_DANGER)
+                    else:
+                        painter.setBrush(CONTROL_HOVER_NEUTRAL)
+
+                    painter.drawRoundedRect(hover_rect.adjusted(-3, -1, 2, 1), 4, 4)
+
+                    if action == "remove":
+                        self.draw_close(painter, hover_rect)
+
+        if view and hasattr(view, "_hover_index"):
+            if view._hover_index == index:
+                painter.fillRect(card_rect, CARD_HOVER)
 
         if option.state & QStyle.State_Selected:
-            painter.fillRect(card_rect, UIPalette.HOVER_PRIMARY)
+            painter.fillRect(card_rect, QColor(70, 90, 120, 120))
 
         painter.restore()

@@ -38,7 +38,6 @@ class FileList(QListView):
         # Drag state
         self._drag_active = False
         self.setAcceptDrops(True)
-        self.viewport().setAcceptDrops(True)  # IMPORTANT FIX
 
         self.setStyleSheet(
             "QListView { background: transparent; border: none; }"
@@ -49,20 +48,9 @@ class FileList(QListView):
     # ------------------------------------------------
 
     def dragEnterEvent(self, event):
-
-        if event.mimeData().hasUrls():
-            self._drag_active = True
-            self.viewport().update()
-            event.acceptProposedAction()
-        else:
-            event.ignore()
-
-    def dragMoveEvent(self, event):
-
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-        else:
-            event.ignore()
+        self._drag_active = True
+        self.viewport().update()
+        event.acceptProposedAction()
 
     def dragLeaveEvent(self, event):
         self._drag_active = False
@@ -70,24 +58,8 @@ class FileList(QListView):
         event.accept()
 
     def dropEvent(self, event):
-
         self._drag_active = False
         self.viewport().update()
-
-        if not event.mimeData().hasUrls():
-            event.ignore()
-            return
-
-        paths = []
-
-        for url in event.mimeData().urls():
-            path = url.toLocalFile()
-            if path:
-                paths.append(path)
-
-        if paths:
-            event_bridge.emit("files_dropped", {"paths": paths})
-
         event.acceptProposedAction()
 
     # ------------------------------------------------
@@ -109,6 +81,7 @@ class FileList(QListView):
         rect = self.viewport().rect()
         center_y = rect.center().y()
 
+        # dropzone border
         pen = QPen(QColor(90, 90, 90))
         pen.setStyle(Qt.DashLine)
         pen.setWidth(2)
@@ -122,6 +95,7 @@ class FileList(QListView):
         drop_rect = rect.adjusted(40, 40, -40, -40)
         painter.drawRoundedRect(drop_rect, 8, 8)
 
+        # icon
         font = painter.font()
         font.setPointSize(34)
         painter.setFont(font)
@@ -134,6 +108,7 @@ class FileList(QListView):
             "⬆"
         )
 
+        # title
         font.setPointSize(20)
         font.setBold(True)
         painter.setFont(font)
@@ -146,6 +121,7 @@ class FileList(QListView):
             title
         )
 
+        # subtitle
         font.setPointSize(12)
         font.setBold(False)
         painter.setFont(font)
@@ -158,6 +134,7 @@ class FileList(QListView):
             "ou use os botões acima"
         )
 
+        # instructions
         painter.setPen(QColor(100, 100, 100))
 
         painter.drawText(

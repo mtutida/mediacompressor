@@ -1,4 +1,3 @@
-
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from app.ui.toast_manager import ToastManager
@@ -29,6 +28,7 @@ class AppShell(QWidget):
 
         self._build_ui()
 
+
         # Toast UI
         from app.ui.toast_manager import ToastManager
         self.toast = ToastManager(self)
@@ -37,10 +37,12 @@ class AppShell(QWidget):
 
     def _build_ui(self):
 
+        # layout raiz
         self.base_layout = QVBoxLayout(self)
         self.base_layout.setContentsMargins(0, 0, 0, 0)
         self.base_layout.setSpacing(0)
 
+        # widgets principais
         self.global_bar = GlobalBarWidget()
         self.selection_bar = SelectionActionBarWidget()
         self.context_bar = ContextBarWidget()
@@ -54,6 +56,7 @@ class AppShell(QWidget):
         self.execution_footer = ExecutionFooterWidget(self.file_list)
         self.global_progress = GlobalProgressWidget()
 
+        # container principal com borda
         self.content = QWidget()
         self.content.setObjectName("MainContent")
 
@@ -61,6 +64,7 @@ class AppShell(QWidget):
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
 
+        # container com margem lateral
         main_container = QWidget()
         main_layout = QVBoxLayout(main_container)
         main_layout.setContentsMargins(2, 0, 2, 0)
@@ -68,6 +72,7 @@ class AppShell(QWidget):
 
         main_layout.addWidget(self.global_bar)
 
+        # área central
         middle_container = QWidget()
         middle_layout = QVBoxLayout(middle_container)
         middle_layout.setContentsMargins(6, 0, 6, 0)
@@ -85,6 +90,7 @@ class AppShell(QWidget):
 
         self.base_layout.addWidget(self.content)
 
+        # stylesheet
         self.setStyleSheet("""
         QPushButton:hover {
             background-color: rgba(255,255,255,0.18);
@@ -139,6 +145,7 @@ class AppShell(QWidget):
             import os
             import subprocess
 
+            # Prefer output file if it exists, otherwise source
             path = getattr(job, "output_path", None) or getattr(job, "source_path", None)
             if not path:
                 return
@@ -155,20 +162,4 @@ class AppShell(QWidget):
             except Exception:
                 pass
 
-        # ------------------------------------------------
-        # Drag & drop → Quick Import (Adicionar Rápido)
-        # ------------------------------------------------
-
-        elif event_type == "files_dropped":
-
-            paths = payload.get("paths", []) if payload else []
-
-            if not paths:
-                return
-
-            # Use the same pipeline as "Adicionar Rápido"
-            for p in paths:
-                try:
-                    self.global_bar._create_job(p)
-                except Exception:
-                    pass
+            
