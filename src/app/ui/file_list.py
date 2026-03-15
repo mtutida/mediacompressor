@@ -3,8 +3,36 @@ from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QPainter, QColor, QPen
 from PySide6.QtWidgets import QAbstractItemView, QListView, QStyleOptionViewItem
 
+import os
+
 from app.interaction_model.event_bridge import event_bridge
 from app.ui.file_card_delegate import FileCardDelegate
+
+
+VIDEO_EXTENSIONS = {
+    ".mp4", ".mov", ".mkv", ".avi",
+    ".webm", ".m4v", ".mpg", ".mpeg"
+}
+
+
+def collect_media_files(path):
+
+    results = []
+
+    if os.path.isfile(path):
+        ext = os.path.splitext(path)[1].lower()
+        if ext in VIDEO_EXTENSIONS:
+            results.append(path)
+
+    elif os.path.isdir(path):
+
+        for root, _, files in os.walk(path):
+            for f in files:
+                ext = os.path.splitext(f)[1].lower()
+                if ext in VIDEO_EXTENSIONS:
+                    results.append(os.path.join(root, f))
+
+    return results
 
 
 class FileList(QListView):
@@ -13,51 +41,41 @@ class FileList(QListView):
         super().__init__(parent)
 
         self.setObjectName("FileList")
-
         self.setContentsMargins(0, 0, 0, 0)
+
+        self.setUniformItemSizes(True)
+        self.setLayoutMode(QListView.Batched)
+        self.setBatchSize(20)
 
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-        self.setLayoutMode(QListView.Batched)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        # Delegate
         self.delegate = FileCardDelegate(self)
         self.setItemDelegate(self.delegate)
 
-        # Hover tracking
         self.setMouseTracking(True)
         self.viewport().setMouseTracking(True)
 
         self._hover_index = None
         self._hover_action = None
 
-        # ------------------------------------------------
-        # Hardened Drag & Drop configuration
-        # ------------------------------------------------
         self._drag_active = False
 
-        # Critical flags
         self.setAcceptDrops(True)
         self.viewport().setAcceptDrops(True)
 
-        # Ensure view does not try to move internal rows
         self.setDragDropMode(QAbstractItemView.DropOnly)
 
-        # Qt sends many drag events to viewport, so we intercept them
         self.viewport().installEventFilter(self)
 
         self.setStyleSheet(
             "QListView { background: transparent; border: none; }"
         )
-
-    # ------------------------------------------------
-    # Event filter to guarantee drag events reach handlers
-    # ------------------------------------------------
 
     def eventFilter(self, obj, event):
 
@@ -80,10 +98,6 @@ class FileList(QListView):
                 return True
 
         return super().eventFilter(obj, event)
-
-    # ------------------------------------------------
-    # Drag highlight
-    # ------------------------------------------------
 
     def dragEnterEvent(self, event):
 
@@ -118,106 +132,22 @@ class FileList(QListView):
         paths = []
 
         for url in event.mimeData().urls():
-            path = url.toLocalFile()
-            if path:
-                paths.append(path)
+
+            dropped_path = url.toLocalFile()
+
+            if not dropped_path:
+                continue
+
+            paths.extend(collect_media_files(dropped_path))
 
         if paths:
             event_bridge.emit("files_dropped", {"paths": paths})
 
         event.acceptProposedAction()
 
-    # ------------------------------------------------
-    # EMPTY STATE (dropzone UI)
-    # ------------------------------------------------
-
-    def paintEvent(self, event):
-
-        super().paintEvent(event)
-
-        model = self.model()
-
-        if not model or model.rowCount() != 0:
-            return
-
-        painter = QPainter(self.viewport())
-        painter.setRenderHint(QPainter.Antialiasing)
-
-        rect = self.viewport().rect()
-        center_y = rect.center().y()
-
-        pen = QPen(QColor(90, 90, 90))
-        pen.setStyle(Qt.DashLine)
-        pen.setWidth(2)
-
-        if self._drag_active:
-            pen.setColor(QColor(120, 170, 255))
-
-        painter.setPen(pen)
-        painter.setBrush(Qt.NoBrush)
-
-        drop_rect = rect.adjusted(40, 40, -40, -40)
-        painter.drawRoundedRect(drop_rect, 8, 8)
-
-        font = painter.font()
-        font.setPointSize(34)
-        painter.setFont(font)
-
-        painter.setPen(QColor(120, 120, 120))
-
-        painter.drawText(
-            rect.adjusted(0, center_y - 120, 0, 0),
-            Qt.AlignHCenter,
-            "⬆"
-        )
-
-        font.setPointSize(20)
-        font.setBold(True)
-        painter.setFont(font)
-
-        title = "Solte os arquivos para adicionar" if self._drag_active else "Arraste arquivos aqui"
-
-        painter.drawText(
-            rect.adjusted(0, center_y - 70, 0, 0),
-            Qt.AlignHCenter,
-            title
-        )
-
-        font.setPointSize(12)
-        font.setBold(False)
-        painter.setFont(font)
-
-        painter.setPen(QColor(130, 130, 130))
-
-        painter.drawText(
-            rect.adjusted(0, center_y - 30, 0, 0),
-            Qt.AlignHCenter,
-            "ou use os botões acima"
-        )
-
-        painter.setPen(QColor(100, 100, 100))
-
-        painter.drawText(
-            rect.adjusted(0, center_y + 0, 0, 0),
-            Qt.AlignHCenter,
-            "Adicionar → escolher arquivos e configurar saída"
-        )
-
-        painter.drawText(
-            rect.adjusted(0, center_y + 22, 0, 0),
-            Qt.AlignHCenter,
-            "Adicionar rápido → escolher arquivos e adicionar direto"
-        )
-
-        painter.drawText(
-            rect.adjusted(0, center_y + 44, 0, 0),
-            Qt.AlignHCenter,
-            "Importar pasta → adicionar todos os arquivos da pasta"
-        )
-
-    # ------------------------------------------------
-    # Hover detection
-    # ------------------------------------------------
+    # -----------------------
+    # Hover logic
+    # -----------------------
 
     def mouseMoveEvent(self, event):
 
@@ -265,10 +195,6 @@ class FileList(QListView):
 
         super().mouseMoveEvent(event)
 
-    # ------------------------------------------------
-    # Clear hover
-    # ------------------------------------------------
-
     def leaveEvent(self, event):
 
         if self._hover_index and self._hover_index.isValid():
@@ -281,9 +207,9 @@ class FileList(QListView):
 
         super().leaveEvent(event)
 
-    # ------------------------------------------------
-    # Click handling
-    # ------------------------------------------------
+    # -----------------------
+    # Button click handling
+    # -----------------------
 
     def mousePressEvent(self, event):
 
@@ -330,3 +256,4 @@ class FileList(QListView):
             return
 
         super().mousePressEvent(event)
+
