@@ -1,5 +1,5 @@
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QPainter, QColor, QPen
 from PySide6.QtWidgets import QAbstractItemView, QListView, QStyleOptionViewItem
 
@@ -25,6 +25,7 @@ class FileList(QListView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
+        # Delegate
         self.delegate = FileCardDelegate(self)
         self.setItemDelegate(self.delegate)
 
@@ -35,14 +36,50 @@ class FileList(QListView):
         self._hover_index = None
         self._hover_action = None
 
-        # Drag state
+        # ------------------------------------------------
+        # Hardened Drag & Drop configuration
+        # ------------------------------------------------
         self._drag_active = False
+
+        # Critical flags
         self.setAcceptDrops(True)
-        self.viewport().setAcceptDrops(True)  # IMPORTANT FIX
+        self.viewport().setAcceptDrops(True)
+
+        # Ensure view does not try to move internal rows
+        self.setDragDropMode(QAbstractItemView.DropOnly)
+
+        # Qt sends many drag events to viewport, so we intercept them
+        self.viewport().installEventFilter(self)
 
         self.setStyleSheet(
             "QListView { background: transparent; border: none; }"
         )
+
+    # ------------------------------------------------
+    # Event filter to guarantee drag events reach handlers
+    # ------------------------------------------------
+
+    def eventFilter(self, obj, event):
+
+        if obj is self.viewport():
+
+            if event.type() == QEvent.DragEnter:
+                self.dragEnterEvent(event)
+                return True
+
+            if event.type() == QEvent.DragMove:
+                self.dragMoveEvent(event)
+                return True
+
+            if event.type() == QEvent.DragLeave:
+                self.dragLeaveEvent(event)
+                return True
+
+            if event.type() == QEvent.Drop:
+                self.dropEvent(event)
+                return True
+
+        return super().eventFilter(obj, event)
 
     # ------------------------------------------------
     # Drag highlight
