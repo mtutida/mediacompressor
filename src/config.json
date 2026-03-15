@@ -3,7 +3,7 @@
   "auto_open_configuration_after_import": false,
   "output_directory": "d:\\teste",
   "use_source_directory": false,
-  "output_naming_mode": 1,
+  "output_naming_mode": 0,
   "output_suffix": "ABC",
   "output_filename_pattern": "{name}_compressed"
 }
