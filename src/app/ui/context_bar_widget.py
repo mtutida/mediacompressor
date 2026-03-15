@@ -80,6 +80,12 @@ class ContextBarWidget(QFrame):
 
     def _on_event(self, event_type, payload):
 
+        # reset stats when queue is cleared
+        if event_type in ("jobs_cleared", "queue_cleared", "clear_all_jobs"):
+            self._jobs.clear()
+            self._update_stats()
+            return
+
         if not payload:
             return
 
