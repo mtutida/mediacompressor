@@ -1,4 +1,6 @@
+
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton
+from PySide6.QtCore import Qt
 from app.interaction_model.event_bridge import event_bridge
 
 
@@ -40,6 +42,18 @@ class ContextBarWidget(QFrame):
 
     # ------------------------------------------------
 
+    def mousePressEvent(self, event):
+        # Ignore clicks on the "remove invalid" button
+        if self.btn_remove_invalid.geometry().contains(event.pos()):
+            super().mousePressEvent(event)
+            return
+
+        # Click on empty area → clear selection
+        event_bridge.emit("clear_selection_requested", None)
+        super().mousePressEvent(event)
+
+    # ------------------------------------------------
+
     def _remove_invalid(self):
         event_bridge.emit("remove_invalid_requested", None)
 
@@ -49,8 +63,7 @@ class ContextBarWidget(QFrame):
 
     def _on_event(self, event_type, payload):
 
-        # reset stats when queue is cleared
-        if event_type in ("jobs_cleared", "queue_cleared", "clear_all_jobs"):
+        if event_type == "clear_all_jobs":
             self._jobs.clear()
             self._update_stats()
             return

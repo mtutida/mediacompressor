@@ -1,8 +1,10 @@
+
 from PySide6.QtCore import QObject
+from app.interaction_model.event_bridge import event_bridge
 
 
 class SelectionController(QObject):
-    """Controls selection state of FileList (FASE 15.3)"""
+    """Controls selection state of FileList"""
 
     def __init__(self, file_list):
         super().__init__()
@@ -12,6 +14,9 @@ class SelectionController(QObject):
         self.expanded_file_id = None
 
         self._connect_selection_model()
+
+        # listen for external clear selection request
+        event_bridge.subscribe(self._on_event)
 
     def _connect_selection_model(self):
 
@@ -24,8 +29,12 @@ class SelectionController(QObject):
 
         indexes = self.file_list.selectedIndexes()
 
-        # guardar apenas rows (mais seguro que QModelIndex)
         self.selected_rows = sorted({i.row() for i in indexes})
+
+    def _on_event(self, event_type, payload):
+
+        if event_type == "clear_selection_requested":
+            self.clear_selection()
 
     def clear_selection(self):
         self.file_list.clearSelection()
@@ -35,4 +44,3 @@ class SelectionController(QObject):
 
     def has_selection(self):
         return bool(self.selected_rows)
-    
