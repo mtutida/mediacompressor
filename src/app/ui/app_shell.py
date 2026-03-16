@@ -15,7 +15,6 @@ from app.ui.file_list_model import FileListModel
 from app.ui.selection_controller import SelectionController
 from app.interaction_model.execution_controller import execution_controller
 
-
 from app.core.app_version import APP_NAME, APP_PHASE, APP_VERSION
 
 
@@ -35,7 +34,7 @@ class AppShell(QWidget):
 
         self.update_window_title()
 
-        # --- Footer button wiring ---
+        # Footer wiring
         self.execution_footer.btn_compress.clicked.connect(
             execution_controller.compress_selected
         )
@@ -124,7 +123,6 @@ class AppShell(QWidget):
         }
         """)
 
-        # ensure correct initial state
         self._update_footer_state()
 
     def update_window_title(self):
@@ -204,7 +202,7 @@ class AppShell(QWidget):
         model = self.file_list.model()
         total = model.rowCount()
 
-        # disable buttons if list empty
+        # LIST EMPTY → disable everything except Exit
         if total == 0:
             self.execution_footer.btn_compress.setEnabled(False)
             self.execution_footer.btn_compress_all.setEnabled(False)
@@ -213,11 +211,14 @@ class AppShell(QWidget):
             self.execution_footer.btn_clear_all.setEnabled(False)
             return
 
-        # enable buttons if list has items
+        # LIST HAS ITEMS → enable buttons again
         self.execution_footer.btn_compress.setEnabled(True)
         self.execution_footer.btn_compress_all.setEnabled(True)
+        self.execution_footer.btn_cancel.setEnabled(True)
+        self.execution_footer.btn_cancel_all.setEnabled(True)
         self.execution_footer.btn_clear_all.setEnabled(True)
 
+        # detect if processing
         processing = False
 
         for r in range(total):
