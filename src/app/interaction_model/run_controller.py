@@ -1,8 +1,10 @@
+
 from app.interaction_model.event_bridge import event_bridge
 from app.core.ffmpeg_engine import FFmpegCompressionEngine
 from app.core.output_naming import generate_output_path
 
 import threading
+from collections import deque
 from app.engine.cancel_token import CancelToken
 
 
@@ -11,13 +13,27 @@ class RunController:
     def __init__(self):
         self.engine = FFmpegCompressionEngine()
 
-        # active job registry (safe key)
+        # active jobs
         self.jobs = {}
 
-        # cancel tokens for running jobs
+        # cancel tokens
         self.tokens = {}
 
+        # queue
+        self._queue = deque()
+        self._queue_lock = threading.Lock()
+        self._queue_event = threading.Event()
+
+        # worker thread
+        self._worker = threading.Thread(
+            target=self._worker_loop,
+            daemon=True
+        )
+        self._worker.start()
+
         event_bridge.subscribe(self._on_event)
+
+    # ------------------------------------------------
 
     def _on_event(self, event_type, payload):
 
@@ -25,25 +41,49 @@ class RunController:
             job = payload if not isinstance(payload, dict) else payload.get("job")
             if job:
 
-                # prevent duplicate execution
-                if getattr(job, 'status', None) in ('PROCESSING','RUNNING'):
+                if getattr(job, "status", None) in ("PROCESSING", "RUNNING"):
                     return
 
                 self._prepare_job(job)
-                self._start_job(job)
+                self._enqueue_job(job)
 
-        if event_type == "cancel_all_requested":
+        elif event_type == "cancel_all_requested":
+
+            # cancel running job
             for t in list(self.tokens.values()):
                 t.cancel()
 
-        if event_type == "job_cancel_requested":
+            # cancel queued jobs
+            with self._queue_lock:
+                while self._queue:
+                    job = self._queue.popleft()
+                    job.status = "CANCELLED"
+                    job.progress = 0
+                    event_bridge.emit("job_updated", {"job": job})
+
+        elif event_type == "job_cancel_requested":
+
             job = payload if not isinstance(payload, dict) else payload.get("job")
             token = self.tokens.get(id(job))
+
             if token:
                 token.cancel()
+                return
 
-        if event_type == "configuration_changed":
+            # if job is queued remove from queue
+            with self._queue_lock:
+                try:
+                    self._queue.remove(job)
+                    job.status = "CANCELLED"
+                    job.progress = 0
+                    event_bridge.emit("job_updated", {"job": job})
+                except ValueError:
+                    pass
+
+        elif event_type == "configuration_changed":
             self._refresh_output_paths()
+
+    # ------------------------------------------------
 
     def _refresh_output_paths(self):
         for job in list(self.jobs.values()):
@@ -51,16 +91,16 @@ class RunController:
                 job.output_path = generate_output_path(job.source_path)
                 event_bridge.emit("job_updated", {"job": job})
 
+    # ------------------------------------------------
+
     def _prepare_job(self, job):
 
         if not hasattr(job, "name"):
             job.name = getattr(job, "file_name", getattr(job, "source_path", "job"))
 
-        if not hasattr(job, "error"):
-            job.error = None
-
-        if not hasattr(job, "progress"):
-            job.progress = 0
+        # reset state for retry
+        job.error = None
+        job.progress = 0
 
         def set_progress(v):
             job.progress = int(v)
@@ -77,6 +117,38 @@ class RunController:
         if not hasattr(job, "is_cancel_requested"):
             job.is_cancel_requested = lambda: False
 
+    # ------------------------------------------------
+
+    def _enqueue_job(self, job):
+
+        job.status = "QUEUED"
+        event_bridge.emit("job_updated", {"job": job})
+
+        with self._queue_lock:
+            self._queue.append(job)
+            self._queue_event.set()
+
+    # ------------------------------------------------
+
+    def _worker_loop(self):
+
+        while True:
+
+            self._queue_event.wait()
+
+            while True:
+
+                with self._queue_lock:
+                    if not self._queue:
+                        self._queue_event.clear()
+                        break
+
+                    job = self._queue.popleft()
+
+                self._start_job(job)
+
+    # ------------------------------------------------
+
     def _start_job(self, job):
 
         job.output_path = generate_output_path(job.source_path)
@@ -86,16 +158,15 @@ class RunController:
         self.tokens[id(job)] = token
         self.jobs[id(job)] = job
 
-        t = threading.Thread(
-            target=self._execute_job,
-            args=(job, token),
-            daemon=True
-        )
-        t.start()
+        self._execute_job(job, token)
+
+    # ------------------------------------------------
 
     def _cleanup_job(self, job):
         self.tokens.pop(id(job), None)
         self.jobs.pop(id(job), None)
+
+    # ------------------------------------------------
 
     def _execute_job(self, job, token):
 
