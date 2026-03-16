@@ -36,8 +36,15 @@ class AppShell(QWidget):
         self.update_window_title()
 
         # --- Footer button wiring (minimal safe change) ---
-        self.execution_footer.btn_compress.clicked.connect(self._compress_selected)
-        self.execution_footer.btn_compress_all.clicked.connect(self._compress_all)
+        self.execution_footer.btn_compress.clicked.connect(
+            execution_controller.compress_selected
+        )
+
+        self.execution_footer.btn_compress_all.clicked.connect(
+            execution_controller.compress_all
+        )
+
+
         self.execution_footer.btn_cancel.clicked.connect(
             execution_controller.cancel_selected
         )
@@ -122,35 +129,6 @@ class AppShell(QWidget):
     # -------------------------------
     # Footer handlers (new)
     # -------------------------------
-
-    def _compress_selected(self):
-
-        rows = self.selection_controller.get_selected_rows()
-
-        if not rows:
-            return
-
-        model = self.file_list.model()
-
-        for r in rows:
-            index = model.index(r)
-            job = model.data(index, FileListModel.ROLE_JOB)
-
-            if job:
-                event_bridge.emit("job_run_requested", {"job": job})
-
-    def _compress_all(self):
-
-        model = self.file_list.model()
-
-        total = model.rowCount()
-
-        for r in range(total):
-            index = model.index(r)
-            job = model.data(index, FileListModel.ROLE_JOB)
-
-            if job:
-                event_bridge.emit("job_run_requested", {"job": job})
 
 
     def update_window_title(self):

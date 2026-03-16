@@ -12,10 +12,43 @@ class ExecutionController:
         self.file_list = file_list
         self.selection_controller = selection_controller
 
-    def cancel_selected(self):
+    # ------------------------
+    # Compress
+    # ------------------------
 
-        if not self.selection_controller or not self.file_list:
+    def compress_selected(self):
+
+        rows = self.selection_controller.get_selected_rows()
+
+        if not rows:
             return
+
+        model = self.file_list.model()
+
+        for r in rows:
+            index = model.index(r)
+            job = model.data(index, FileListModel.ROLE_JOB)
+
+            if job:
+                event_bridge.emit("job_run_requested", {"job": job})
+
+    def compress_all(self):
+
+        model = self.file_list.model()
+        total = model.rowCount()
+
+        for r in range(total):
+            index = model.index(r)
+            job = model.data(index, FileListModel.ROLE_JOB)
+
+            if job:
+                event_bridge.emit("job_run_requested", {"job": job})
+
+    # ------------------------
+    # Cancel
+    # ------------------------
+
+    def cancel_selected(self):
 
         rows = self.selection_controller.get_selected_rows()
 
