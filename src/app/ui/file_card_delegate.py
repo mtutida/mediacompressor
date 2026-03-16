@@ -48,6 +48,7 @@ STATUS_COLORS = {
     "COMPLETED": QColor(0, 200, 120),
     "ERROR": QColor(200, 60, 60),
     "FAILED": QColor(200, 60, 60),
+    "CANCELLED": QColor(180, 140, 80),
 }
 
 STATUS_TEXT_MAP = {

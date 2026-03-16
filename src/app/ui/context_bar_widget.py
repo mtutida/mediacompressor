@@ -1,4 +1,3 @@
-
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton
 from app.interaction_model.event_bridge import event_bridge
 
@@ -36,36 +35,6 @@ class ContextBarWidget(QFrame):
 
         # subscribe to global bridge
         event_bridge.subscribe(self._on_event)
-
-        self.setStyleSheet("""
-        QFrame#ContextBarWidget{
-            background:#2b2b2b;
-            border-left:1px solid #3a3a3a;
-            border-right:1px solid #3a3a3a;
-            border-bottom:1px solid #3a3a3a;
-            border-bottom-left-radius:6px;
-            border-bottom-right-radius:6px;
-        }
-
-        QLabel{
-            font-size:12px;
-            color:#c8c8c8;
-        }
-
-        QToolButton{
-            padding:0px 6px;
-            border:0px;
-            background:transparent;
-            color:#4aa3ff;
-            font-weight:500;
-        }
-
-        QToolButton:hover{
-            background:#3a3a3a;
-            border-radius:3px;
-            color:#79c0ff;
-        }
-        """)
 
         self._update_stats()
 
@@ -132,6 +101,7 @@ class ContextBarWidget(QFrame):
         queued = 0
         done = 0
         error = 0
+        cancelled = 0
 
         for job in self._jobs.values():
 
@@ -149,6 +119,9 @@ class ContextBarWidget(QFrame):
             elif status in ("ERROR", "FAILED"):
                 error += 1
 
+            elif status == "CANCELLED":
+                cancelled += 1
+
         state, color = self._resolve_state(total, active, queued, done, error)
 
         dot = f'<span style="color:{color};font-size:14px;">●</span>'
@@ -159,6 +132,7 @@ class ContextBarWidget(QFrame):
             f" | Ativo: {active}"
             f" | Fila: {queued}"
             f" | Concluído: {done}"
+            f" | Cancelado: {cancelled}"
             f" | Erro: {error}"
         )
 
