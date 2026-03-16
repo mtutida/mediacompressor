@@ -272,7 +272,11 @@ class FileList(QListView):
             return
 
         if rects["run"].contains(pos):
-            event_bridge.emit("job_run_requested", job)
+            status = getattr(job, "status", "READY")
+            if status in ("RUNNING","PROCESSING"):
+                event_bridge.emit("job_cancel_requested", job)
+            else:
+                event_bridge.emit("job_run_requested", job)
             return
 
         if rects["settings"].contains(pos):
@@ -292,4 +296,15 @@ class FileList(QListView):
         if pos.x() >= action_column_start:
             return
 
+
+        already_selected = self.selectionModel().isSelected(index)
+
         super().mousePressEvent(event)
+
+        if already_selected:
+            from PySide6.QtCore import QItemSelectionModel
+            self.selectionModel().select(
+                index,
+                QItemSelectionModel.Deselect
+            )
+

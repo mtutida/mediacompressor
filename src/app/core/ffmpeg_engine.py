@@ -50,7 +50,7 @@ class FFmpegCompressionEngine:
 
         return h * 3600 + m * 60 + s
 
-    def process(self, job):
+    def process(self, job, cancel_token=None):
 
         input_path = job.source_path
         output_path = job.output_path
@@ -83,6 +83,11 @@ class FFmpegCompressionEngine:
         last_progress = 0
 
         for line in process.stderr:
+
+            if cancel_token and cancel_token.is_cancelled():
+                process.kill()
+                process.wait()
+                raise Exception("cancelled")
 
             seconds = self._parse_time_to_seconds(line)
 

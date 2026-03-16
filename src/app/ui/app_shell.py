@@ -1,20 +1,18 @@
-
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-
-from app.ui.toast_manager import ToastManager
-from app.interaction_model.event_bridge import event_bridge
-
-from app.ui.global_bar import GlobalBarWidget
-from app.ui.context_bar import SelectionActionBarWidget
-from app.ui.context_bar_widget import ContextBarWidget
-from app.ui.file_list_container import FileListContainer
-from app.ui.execution_footer import ExecutionFooterWidget
-from app.ui.global_progress import GlobalProgressWidget
-from app.ui.configuration_overlay import ConfigurationOverlay
-from app.ui.file_list_model import FileListModel
-from app.ui.selection_controller import SelectionController
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from app.core.app_version import APP_NAME, APP_PHASE, APP_VERSION
+from app.interaction_model.event_bridge import event_bridge
+from app.interaction_model.execution_controller import execution_controller
+from app.ui.configuration_overlay import ConfigurationOverlay
+from app.ui.context_bar import SelectionActionBarWidget
+from app.ui.context_bar_widget import ContextBarWidget
+from app.ui.execution_footer import ExecutionFooterWidget
+from app.ui.file_list_container import FileListContainer
+from app.ui.file_list_model import FileListModel
+from app.ui.global_bar import GlobalBarWidget
+from app.ui.global_progress import GlobalProgressWidget
+from app.ui.selection_controller import SelectionController
+from app.ui.toast_manager import ToastManager
 
 
 class AppShell(QWidget):
@@ -33,6 +31,23 @@ class AppShell(QWidget):
 
         self.update_window_title()
 
+        # Footer wiring
+        self.execution_footer.btn_compress.clicked.connect(
+            execution_controller.compress_selected
+        )
+
+        self.execution_footer.btn_compress_all.clicked.connect(
+            execution_controller.compress_all
+        )
+
+        self.execution_footer.btn_cancel.clicked.connect(
+            execution_controller.cancel_selected
+        )
+
+        self.execution_footer.btn_cancel_all.clicked.connect(
+            execution_controller.cancel_all
+        )
+
     def _build_ui(self):
 
         self.base_layout = QVBoxLayout(self)
@@ -47,7 +62,18 @@ class AppShell(QWidget):
         self.file_list = self.file_list_container.file_list
         self.file_list.setModel(FileListModel())
 
+        model = self.file_list.model()
+
+        try:
+            model.dataChanged.connect(self._update_footer_state)
+            model.rowsInserted.connect(self._update_footer_state)
+            model.rowsRemoved.connect(self._update_footer_state)
+            model.modelReset.connect(self._update_footer_state)
+        except Exception:
+            pass
+
         self.selection_controller = SelectionController(self.file_list)
+        execution_controller.set_context(self.file_list, self.selection_controller)
 
         self.execution_footer = ExecutionFooterWidget()
         self.global_progress = GlobalProgressWidget()
@@ -83,7 +109,8 @@ class AppShell(QWidget):
 
         self.base_layout.addWidget(self.content)
 
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
         QPushButton:hover {
             background-color: rgba(255,255,255,0.18);
         }
@@ -92,7 +119,10 @@ class AppShell(QWidget):
             border:2px solid #3a3a3a;
             border-top:none;
         }
-        """)
+        """
+        )
+
+        self._update_footer_state()
 
     def update_window_title(self):
         self.setWindowTitle(f"{APP_NAME} — FASE {APP_PHASE} — v{APP_VERSION}")
@@ -137,7 +167,9 @@ class AppShell(QWidget):
             import os
             import subprocess
 
-            path = getattr(job, "output_path", None) or getattr(job, "source_path", None)
+            path = getattr(job, "output_path", None) or getattr(
+                job, "source_path", None
+            )
             if not path:
                 return
 
@@ -153,10 +185,6 @@ class AppShell(QWidget):
             except Exception:
                 pass
 
-        # ------------------------------------------------
-        # Drag & drop → Quick Import (Adicionar Rápido)
-        # ------------------------------------------------
-
         elif event_type == "files_dropped":
 
             paths = payload.get("paths", []) if payload else []
@@ -164,9 +192,56 @@ class AppShell(QWidget):
             if not paths:
                 return
 
-            # Use the same pipeline as "Adicionar Rápido"
             for p in paths:
                 try:
                     self.global_bar._create_job(p)
                 except Exception:
                     pass
+
+    def _update_footer_state(self):
+
+        model = self.file_list.model()
+        total = model.rowCount()
+
+        # LIST EMPTY → disable everything except Exit
+        if total == 0:
+            self.execution_footer.btn_compress.setEnabled(False)
+            self.execution_footer.btn_compress_all.setEnabled(False)
+            self.execution_footer.btn_cancel.setEnabled(False)
+            self.execution_footer.btn_cancel_all.setEnabled(False)
+            self.execution_footer.btn_clear_all.setEnabled(False)
+            return
+
+        # LIST HAS ITEMS → enable buttons again
+        self.execution_footer.btn_compress.setEnabled(True)
+        self.execution_footer.btn_compress_all.setEnabled(True)
+        self.execution_footer.btn_cancel.setEnabled(True)
+        self.execution_footer.btn_cancel_all.setEnabled(True)
+        self.execution_footer.btn_clear_all.setEnabled(True)
+
+        # detect if processing
+        processing = False
+
+        for r in range(total):
+            index = model.index(r)
+            job = model.data(index, FileListModel.ROLE_JOB)
+
+            if job and getattr(job, "status", None) in ("PROCESSING", "RUNNING"):
+                processing = True
+                break
+
+        self.execution_footer.set_processing_state(processing)
+
+    def changeEvent(self, event):
+        from PySide6.QtCore import QEvent
+
+        if event.type() == QEvent.PaletteChange:
+            # Theme changed (Windows light/dark)
+            self._reapply_theme()
+        super().changeEvent(event)
+
+    def _reapply_theme(self):
+        # Force widgets to repaint using updated UIPalette
+        self.update()
+        for child in self.findChildren(QWidget):
+            child.update()
