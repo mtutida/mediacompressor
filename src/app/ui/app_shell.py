@@ -13,6 +13,8 @@ from app.ui.global_progress import GlobalProgressWidget
 from app.ui.configuration_overlay import ConfigurationOverlay
 from app.ui.file_list_model import FileListModel
 from app.ui.selection_controller import SelectionController
+from app.interaction_model.execution_controller import execution_controller
+
 
 from app.core.app_version import APP_NAME, APP_PHASE, APP_VERSION
 
@@ -36,8 +38,13 @@ class AppShell(QWidget):
         # --- Footer button wiring (minimal safe change) ---
         self.execution_footer.btn_compress.clicked.connect(self._compress_selected)
         self.execution_footer.btn_compress_all.clicked.connect(self._compress_all)
-        self.execution_footer.btn_cancel.clicked.connect(self._cancel_selected)
-        self.execution_footer.btn_cancel_all.clicked.connect(self._cancel_all)
+        self.execution_footer.btn_cancel.clicked.connect(
+            execution_controller.cancel_selected
+        )
+
+        self.execution_footer.btn_cancel_all.clicked.connect(
+            execution_controller.cancel_all
+        )
 
 
     def _build_ui(self):
@@ -65,6 +72,7 @@ class AppShell(QWidget):
 
 
         self.selection_controller = SelectionController(self.file_list)
+        execution_controller.set_context(self.file_list, self.selection_controller)
 
         self.execution_footer = ExecutionFooterWidget()
         self.global_progress = GlobalProgressWidget()
@@ -144,28 +152,6 @@ class AppShell(QWidget):
             if job:
                 event_bridge.emit("job_run_requested", {"job": job})
 
-    # -------------------------------
-    # Cancel handlers
-    # -------------------------------
-    def _cancel_selected(self):
-
-        rows = self.selection_controller.get_selected_rows()
-        if not rows:
-            return
-
-        model = self.file_list.model()
-
-        for r in rows:
-            index = model.index(r)
-            job = model.data(index, FileListModel.ROLE_JOB)
-            if job:
-                event_bridge.emit("job_cancel_requested", {"job": job})
-
-    def _cancel_all(self):
-        event_bridge.emit("cancel_all_requested", None)
-
-
-    # -------------------------------
 
     def update_window_title(self):
         self.setWindowTitle(f"{APP_NAME} — FASE {APP_PHASE} — v{APP_VERSION}")
