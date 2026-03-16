@@ -1,10 +1,10 @@
-
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractItemView, QListView, QStyleOptionViewItem
 
 from app.interaction_model.event_bridge import event_bridge
 from app.ui.file_card_delegate import FileCardDelegate
+from app.ui.ui_palette import UIPalette
 
 
 class FileList(QListView):
@@ -40,9 +40,7 @@ class FileList(QListView):
         self.setAcceptDrops(True)
         self.viewport().setAcceptDrops(True)  # IMPORTANT FIX
 
-        self.setStyleSheet(
-            "QListView { background: transparent; border: none; }"
-        )
+        self.setStyleSheet("QListView { background: transparent; border: none; }")
 
     # ------------------------------------------------
     # Drag highlight
@@ -109,12 +107,12 @@ class FileList(QListView):
         rect = self.viewport().rect()
         center_y = rect.center().y()
 
-        pen = QPen(QColor(90, 90, 90))
+        pen = QPen(UIPalette.EMPTY_DROP_BORDER)
         pen.setStyle(Qt.DashLine)
         pen.setWidth(2)
 
         if self._drag_active:
-            pen.setColor(QColor(120, 170, 255))
+            pen.setColor(UIPalette.EMPTY_DROP_ACTIVE)
 
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
@@ -126,56 +124,52 @@ class FileList(QListView):
         font.setPointSize(34)
         painter.setFont(font)
 
-        painter.setPen(QColor(120, 120, 120))
+        painter.setPen(UIPalette.EMPTY_TEXT)
 
-        painter.drawText(
-            rect.adjusted(0, center_y - 120, 0, 0),
-            Qt.AlignHCenter,
-            "⬆"
-        )
+        painter.drawText(rect.adjusted(0, center_y - 120, 0, 0), Qt.AlignHCenter, "⬆")
 
         font.setPointSize(20)
         font.setBold(True)
         painter.setFont(font)
 
-        title = "Solte os arquivos para adicionar" if self._drag_active else "Arraste arquivos aqui"
-
-        painter.drawText(
-            rect.adjusted(0, center_y - 70, 0, 0),
-            Qt.AlignHCenter,
-            title
+        title = (
+            "Solte os arquivos para adicionar"
+            if self._drag_active
+            else "Arraste arquivos aqui"
         )
+
+        painter.drawText(rect.adjusted(0, center_y - 70, 0, 0), Qt.AlignHCenter, title)
 
         font.setPointSize(12)
         font.setBold(False)
         painter.setFont(font)
 
-        painter.setPen(QColor(130, 130, 130))
+        painter.setPen(UIPalette.EMPTY_TEXT_SECONDARY)
 
         painter.drawText(
             rect.adjusted(0, center_y - 30, 0, 0),
             Qt.AlignHCenter,
-            "ou use os botões acima"
+            "ou use os botões acima",
         )
 
-        painter.setPen(QColor(100, 100, 100))
+        painter.setPen(UIPalette.EMPTY_TEXT)
 
         painter.drawText(
             rect.adjusted(0, center_y + 0, 0, 0),
             Qt.AlignHCenter,
-            "Adicionar → escolher arquivos e configurar saída"
+            "Adicionar → escolher arquivos e configurar saída",
         )
 
         painter.drawText(
             rect.adjusted(0, center_y + 22, 0, 0),
             Qt.AlignHCenter,
-            "Adicionar rápido → escolher arquivos e adicionar direto"
+            "Adicionar rápido → escolher arquivos e adicionar direto",
         )
 
         painter.drawText(
             rect.adjusted(0, center_y + 44, 0, 0),
             Qt.AlignHCenter,
-            "Importar pasta → adicionar todos os arquivos da pasta"
+            "Importar pasta → adicionar todos os arquivos da pasta",
         )
 
     # ------------------------------------------------
@@ -273,7 +267,7 @@ class FileList(QListView):
 
         if rects["run"].contains(pos):
             status = getattr(job, "status", "READY")
-            if status in ("RUNNING","PROCESSING"):
+            if status in ("RUNNING", "PROCESSING"):
                 event_bridge.emit("job_cancel_requested", job)
             else:
                 event_bridge.emit("job_run_requested", job)
@@ -296,15 +290,11 @@ class FileList(QListView):
         if pos.x() >= action_column_start:
             return
 
-
         already_selected = self.selectionModel().isSelected(index)
 
         super().mousePressEvent(event)
 
         if already_selected:
             from PySide6.QtCore import QItemSelectionModel
-            self.selectionModel().select(
-                index,
-                QItemSelectionModel.Deselect
-            )
 
+            self.selectionModel().select(index, QItemSelectionModel.Deselect)
