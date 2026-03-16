@@ -367,7 +367,10 @@ class FileCardDelegate(QStyledItemDelegate):
         font.setPointSize(font.pointSize() - 1)
         painter.setFont(font)
 
-        painter.drawText(run_rect, Qt.AlignCenter, "▶  Comprimir")
+        label = "▶  Comprimir"
+        if raw_status in ("RUNNING","PROCESSING"):
+            label = "■  Cancelar"
+        painter.drawText(run_rect, Qt.AlignCenter, label)
 
         progress_rect = actions["progress"]
 

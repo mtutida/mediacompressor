@@ -272,7 +272,11 @@ class FileList(QListView):
             return
 
         if rects["run"].contains(pos):
-            event_bridge.emit("job_run_requested", job)
+            status = getattr(job, "status", "READY")
+            if status in ("RUNNING","PROCESSING"):
+                event_bridge.emit("job_cancel_requested", job)
+            else:
+                event_bridge.emit("job_run_requested", job)
             return
 
         if rects["settings"].contains(pos):

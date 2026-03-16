@@ -33,6 +33,13 @@ class AppShell(QWidget):
 
         self.update_window_title()
 
+        # --- Footer button wiring (minimal safe change) ---
+        self.execution_footer.btn_compress.clicked.connect(self._compress_selected)
+        self.execution_footer.btn_compress_all.clicked.connect(self._compress_all)
+        self.execution_footer.btn_cancel.clicked.connect(self._cancel_selected)
+        self.execution_footer.btn_cancel_all.clicked.connect(self._cancel_all)
+
+
     def _build_ui(self):
 
         self.base_layout = QVBoxLayout(self)
@@ -46,6 +53,16 @@ class AppShell(QWidget):
         self.file_list_container = FileListContainer()
         self.file_list = self.file_list_container.file_list
         self.file_list.setModel(FileListModel())
+        # connect model signals to footer state
+        model = self.file_list.model()
+        try:
+            model.dataChanged.connect(self._update_footer_state)
+            model.rowsInserted.connect(self._update_footer_state)
+            model.rowsRemoved.connect(self._update_footer_state)
+            model.modelReset.connect(self._update_footer_state)
+        except Exception:
+            pass
+
 
         self.selection_controller = SelectionController(self.file_list)
 
@@ -93,6 +110,62 @@ class AppShell(QWidget):
             border-top:none;
         }
         """)
+
+    # -------------------------------
+    # Footer handlers (new)
+    # -------------------------------
+
+    def _compress_selected(self):
+
+        rows = self.selection_controller.get_selected_rows()
+
+        if not rows:
+            return
+
+        model = self.file_list.model()
+
+        for r in rows:
+            index = model.index(r)
+            job = model.data(index, FileListModel.ROLE_JOB)
+
+            if job:
+                event_bridge.emit("job_run_requested", {"job": job})
+
+    def _compress_all(self):
+
+        model = self.file_list.model()
+
+        total = model.rowCount()
+
+        for r in range(total):
+            index = model.index(r)
+            job = model.data(index, FileListModel.ROLE_JOB)
+
+            if job:
+                event_bridge.emit("job_run_requested", {"job": job})
+
+    # -------------------------------
+    # Cancel handlers
+    # -------------------------------
+    def _cancel_selected(self):
+
+        rows = self.selection_controller.get_selected_rows()
+        if not rows:
+            return
+
+        model = self.file_list.model()
+
+        for r in rows:
+            index = model.index(r)
+            job = model.data(index, FileListModel.ROLE_JOB)
+            if job:
+                event_bridge.emit("job_cancel_requested", {"job": job})
+
+    def _cancel_all(self):
+        event_bridge.emit("cancel_all_requested", None)
+
+
+    # -------------------------------
 
     def update_window_title(self):
         self.setWindowTitle(f"{APP_NAME} — FASE {APP_PHASE} — v{APP_VERSION}")
@@ -164,9 +237,26 @@ class AppShell(QWidget):
             if not paths:
                 return
 
-            # Use the same pipeline as "Adicionar Rápido"
             for p in paths:
                 try:
                     self.global_bar._create_job(p)
                 except Exception:
                     pass
+
+
+    def _update_footer_state(self):
+
+        model = self.file_list.model()
+        total = model.rowCount()
+
+        processing = False
+
+        for r in range(total):
+            index = model.index(r)
+            job = model.data(index, FileListModel.ROLE_JOB)
+
+            if job and getattr(job, "status", None) in ("PROCESSING", "RUNNING"):
+                processing = True
+                break
+
+        self.execution_footer.set_processing_state(processing)

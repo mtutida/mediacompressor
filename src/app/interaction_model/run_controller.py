@@ -4,6 +4,7 @@ from app.core.ffmpeg_engine import FFmpegCompressionEngine
 from app.core.output_naming import generate_output_path
 
 import threading
+from app.engine.cancel_token import CancelToken
 
 
 class RunController:
@@ -11,6 +12,7 @@ class RunController:
     def __init__(self):
         self.engine = FFmpegCompressionEngine()
         self.jobs = []
+        self.tokens = {}
         event_bridge.subscribe(self._on_event)
 
     def _on_event(self, event_type, payload):
@@ -20,8 +22,20 @@ class RunController:
             if job:
                 if job not in self.jobs:
                     self.jobs.append(job)
+                if getattr(job, 'status', None) in ('PROCESSING','RUNNING'):
+                    return
                 self._prepare_job(job)
                 self._start_job(job)
+
+        if event_type == "cancel_all_requested":
+            for t in list(self.tokens.values()):
+                t.cancel()
+
+        if event_type == "job_cancel_requested":
+            job = payload if not isinstance(payload, dict) else payload.get("job")
+            token = self.tokens.get(id(job))
+            if token:
+                token.cancel()
 
         if event_type == "configuration_changed":
             self._refresh_output_paths()
@@ -63,33 +77,42 @@ class RunController:
         job.output_path = generate_output_path(job.source_path)
         event_bridge.emit("job_updated", {"job": job})
 
+        token = CancelToken()
+        self.tokens[id(job)] = token
+
         t = threading.Thread(
             target=self._execute_job,
-            args=(job,),
+            args=(job, token),
             daemon=True
         )
         t.start()
 
-    def _execute_job(self, job):
+    def _execute_job(self, job, token):
 
         try:
 
             job.status = "PROCESSING"
             event_bridge.emit("job_updated", {"job": job})
 
-            self.engine.process(job)
+            self.engine.process(job, cancel_token=token)
 
             job.progress = 100
             job.status = "DONE"
 
+            # critical fix for UI counters
+            event_bridge.emit("job_updated", {"job": job})
             event_bridge.emit("job_finished", {"job": job})
 
         except Exception as e:
 
-            job.status = "FALHA"
+            job.status = "CANCELLED" if "cancelled" in str(e).lower() else "FALHA"
             job.error = str(e)
 
-            event_bridge.emit("job_failed", {
+            if "cancelled" in str(e).lower():
+                job.progress = 0
+                event_bridge.emit("job_updated", {"job": job})
+            else:
+                event_bridge.emit("job_failed", {
                 "job": job,
                 "error": str(e)
             })
