@@ -35,7 +35,7 @@ class AppShell(QWidget):
 
         self.update_window_title()
 
-        # --- Footer button wiring (minimal safe change) ---
+        # --- Footer button wiring ---
         self.execution_footer.btn_compress.clicked.connect(
             execution_controller.compress_selected
         )
@@ -44,7 +44,6 @@ class AppShell(QWidget):
             execution_controller.compress_all
         )
 
-
         self.execution_footer.btn_cancel.clicked.connect(
             execution_controller.cancel_selected
         )
@@ -52,7 +51,6 @@ class AppShell(QWidget):
         self.execution_footer.btn_cancel_all.clicked.connect(
             execution_controller.cancel_all
         )
-
 
     def _build_ui(self):
 
@@ -67,8 +65,9 @@ class AppShell(QWidget):
         self.file_list_container = FileListContainer()
         self.file_list = self.file_list_container.file_list
         self.file_list.setModel(FileListModel())
-        # connect model signals to footer state
+
         model = self.file_list.model()
+
         try:
             model.dataChanged.connect(self._update_footer_state)
             model.rowsInserted.connect(self._update_footer_state)
@@ -76,7 +75,6 @@ class AppShell(QWidget):
             model.modelReset.connect(self._update_footer_state)
         except Exception:
             pass
-
 
         self.selection_controller = SelectionController(self.file_list)
         execution_controller.set_context(self.file_list, self.selection_controller)
@@ -126,10 +124,8 @@ class AppShell(QWidget):
         }
         """)
 
-    # -------------------------------
-    # Footer handlers (new)
-    # -------------------------------
-
+        # ensure correct initial state
+        self._update_footer_state()
 
     def update_window_title(self):
         self.setWindowTitle(f"{APP_NAME} — FASE {APP_PHASE} — v{APP_VERSION}")
@@ -190,10 +186,6 @@ class AppShell(QWidget):
             except Exception:
                 pass
 
-        # ------------------------------------------------
-        # Drag & drop → Quick Import (Adicionar Rápido)
-        # ------------------------------------------------
-
         elif event_type == "files_dropped":
 
             paths = payload.get("paths", []) if payload else []
@@ -207,11 +199,24 @@ class AppShell(QWidget):
                 except Exception:
                     pass
 
-
     def _update_footer_state(self):
 
         model = self.file_list.model()
         total = model.rowCount()
+
+        # disable buttons if list empty
+        if total == 0:
+            self.execution_footer.btn_compress.setEnabled(False)
+            self.execution_footer.btn_compress_all.setEnabled(False)
+            self.execution_footer.btn_cancel.setEnabled(False)
+            self.execution_footer.btn_cancel_all.setEnabled(False)
+            self.execution_footer.btn_clear_all.setEnabled(False)
+            return
+
+        # enable buttons if list has items
+        self.execution_footer.btn_compress.setEnabled(True)
+        self.execution_footer.btn_compress_all.setEnabled(True)
+        self.execution_footer.btn_clear_all.setEnabled(True)
 
         processing = False
 
