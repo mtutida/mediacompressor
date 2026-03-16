@@ -296,4 +296,15 @@ class FileList(QListView):
         if pos.x() >= action_column_start:
             return
 
+
+        already_selected = self.selectionModel().isSelected(index)
+
         super().mousePressEvent(event)
+
+        if already_selected:
+            from PySide6.QtCore import QItemSelectionModel
+            self.selectionModel().select(
+                index,
+                QItemSelectionModel.Deselect
+            )
+

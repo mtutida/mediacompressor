@@ -15,7 +15,6 @@ class SelectionController(QObject):
 
         self._connect_selection_model()
 
-        # listen for external clear selection request
         event_bridge.subscribe(self._on_event)
 
     def _connect_selection_model(self):
@@ -34,7 +33,7 @@ class SelectionController(QObject):
     def _on_event(self, event_type, payload):
 
         if event_type == "clear_selection_requested":
-            self.clear_selection()
+            self.file_list.clearSelection()
 
     def clear_selection(self):
         self.file_list.clearSelection()
