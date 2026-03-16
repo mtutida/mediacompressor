@@ -1,10 +1,11 @@
-
 import os
 from collections import OrderedDict
 
 from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
-from PySide6.QtWidgets import QStyledItemDelegate, QStyle
+from PySide6.QtWidgets import QStyle, QStyledItemDelegate
+
+from app.ui.ui_palette import UIPalette
 
 
 class ThumbCache(OrderedDict):
@@ -20,19 +21,19 @@ class ThumbCache(OrderedDict):
 
 THUMB_CACHE = ThumbCache()
 
-COLOR_BG = QColor(43, 43, 43)
-COLOR_BORDER = QColor(90, 90, 90)
-COLOR_HEADER = QColor(53, 53, 53)
+COLOR_BG = UIPalette.CARD_BG
+COLOR_BORDER = UIPalette.CARD_BORDER
+COLOR_HEADER = UIPalette.CARD_HEADER
 
-COLOR_TEXT = QColor(220, 220, 220)
-COLOR_META = QColor(170, 170, 170)
+COLOR_TEXT = UIPalette.TEXT
+COLOR_META = UIPalette.META
 
-COLOR_SEPARATOR = QColor(70, 70, 70)
+COLOR_SEPARATOR = UIPalette.SEPARATOR
 
-COLOR_ACTION_PRIMARY = QColor(90, 140, 220)
-COLOR_PROGRESS_TRACK = QColor(20, 20, 20)
+COLOR_ACTION_PRIMARY = UIPalette.PRIMARY
+COLOR_PROGRESS_TRACK = UIPalette.PROGRESS_TRACK
 
-CARD_HOVER = QColor(255, 255, 255, 20)
+CARD_HOVER = UIPalette.CARD_HOVER
 CONTROL_HOVER_NEUTRAL = QColor(255, 255, 255, 30)
 CONTROL_HOVER_PRIMARY = QColor(70, 140, 255, 80)
 CONTROL_HOVER_DANGER = QColor(220, 40, 40, 120)
@@ -171,7 +172,6 @@ class FileCardDelegate(QStyledItemDelegate):
 
         view = option.widget
 
-        
         source = getattr(job, "source_path", None)
         output_path = getattr(job, "output_path", None)
 
@@ -186,7 +186,7 @@ class FileCardDelegate(QStyledItemDelegate):
                 out_name, out_ext = os.path.splitext(out_base)
 
                 if src_ext == out_ext and out_name.startswith(src_name):
-                    suffix = out_name[len(src_name):]
+                    suffix = out_name[len(src_name) :]
                     if suffix:
                         name = f"{src_name} [{suffix}] {src_ext}"
                     else:
@@ -274,8 +274,6 @@ class FileCardDelegate(QStyledItemDelegate):
 
         painter.setPen(Qt.white)
 
-        
-
         name_rect = QRect(info_x, rect.top(), info_width, self.HEADER_HEIGHT)
 
         # detect LAST suffix pattern like:  [_something] .ext
@@ -284,35 +282,45 @@ class FileCardDelegate(QStyledItemDelegate):
 
         if suffix_start != -1 and suffix_end != -1 and suffix_end > suffix_start:
             base = name[:suffix_start]
-            suffix = name[suffix_start:suffix_end+1]
-            ext = name[suffix_end+1:]
+            suffix = name[suffix_start : suffix_end + 1]
+            ext = name[suffix_end + 1 :]
 
             x = name_rect.left()
 
             painter.setPen(Qt.white)
-            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
-                             Qt.AlignLeft | Qt.AlignVCenter, base)
+            painter.drawText(
+                QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                base,
+            )
 
             base_width = metrics.horizontalAdvance(base)
             x += base_width
 
             painter.setPen(QColor(90, 140, 220))
-            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
-                             Qt.AlignLeft | Qt.AlignVCenter, suffix)
+            painter.drawText(
+                QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                suffix,
+            )
 
             suffix_width = metrics.horizontalAdvance(suffix)
             x += suffix_width
 
             painter.setPen(Qt.white)
-            painter.drawText(QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
-                             Qt.AlignLeft | Qt.AlignVCenter, ext)
+            painter.drawText(
+                QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                ext,
+            )
 
         else:
             painter.setPen(Qt.white)
-            painter.drawText(name_rect,
-                             Qt.AlignLeft | Qt.AlignVCenter,
-                             metrics.elidedText(name, Qt.ElideRight, info_width))
-
+            painter.drawText(
+                name_rect,
+                Qt.AlignLeft | Qt.AlignVCenter,
+                metrics.elidedText(name, Qt.ElideRight, info_width),
+            )
 
         folder_rect = actions["folder"]
 
@@ -328,7 +336,7 @@ class FileCardDelegate(QStyledItemDelegate):
         painter.drawText(
             path_rect,
             Qt.AlignLeft | Qt.AlignVCenter,
-            metrics.elidedText(dest, Qt.ElideMiddle, path_rect.width())
+            metrics.elidedText(dest, Qt.ElideMiddle, path_rect.width()),
         )
 
         metadata = f"{codec} • {resolution} • {fps}fps • {duration} • {container}"
@@ -371,7 +379,7 @@ class FileCardDelegate(QStyledItemDelegate):
         painter.setFont(font)
 
         label = "▶  Comprimir"
-        if raw_status in ("RUNNING","PROCESSING"):
+        if raw_status in ("RUNNING", "PROCESSING"):
             label = "■  Cancelar"
         painter.drawText(run_rect, Qt.AlignCenter, label)
 
@@ -404,27 +412,45 @@ class FileCardDelegate(QStyledItemDelegate):
 
         painter.drawText(progress_rect, Qt.AlignCenter, display_text)
 
-        painter.setPen(QPen(QColor(120,120,120), 2))
-        painter.drawLine(progress_rect.left(), progress_rect.top()+2, progress_rect.left(), progress_rect.bottom())
-        painter.drawLine(progress_rect.right(), progress_rect.top()+2, progress_rect.right(), progress_rect.bottom())
-
-        painter.setPen(QPen(QColor(90,90,90), 1))
+        painter.setPen(QPen(QColor(120, 120, 120), 2))
         painter.drawLine(
-            progress_rect.left()+2,
-            progress_rect.top()+1,
-            progress_rect.right()-2,
-            progress_rect.top()+1
+            progress_rect.left(),
+            progress_rect.top() + 2,
+            progress_rect.left(),
+            progress_rect.bottom(),
+        )
+        painter.drawLine(
+            progress_rect.right(),
+            progress_rect.top() + 2,
+            progress_rect.right(),
+            progress_rect.bottom(),
+        )
+
+        painter.setPen(QPen(QColor(90, 90, 90), 1))
+        painter.drawLine(
+            progress_rect.left() + 2,
+            progress_rect.top() + 1,
+            progress_rect.right() - 2,
+            progress_rect.top() + 1,
         )
 
         if view:
 
-            if hasattr(view, "_pressed_index") and view._pressed_index == index and view._pressed_action == "run":
+            if (
+                hasattr(view, "_pressed_index")
+                and view._pressed_index == index
+                and view._pressed_action == "run"
+            ):
 
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(PRESSED_PRIMARY)
                 painter.drawRoundedRect(run_rect.adjusted(-1, -1, 1, 1), 3, 3)
 
-            elif hasattr(view, "_hover_index") and view._hover_index == index and view._hover_action:
+            elif (
+                hasattr(view, "_hover_index")
+                and view._hover_index == index
+                and view._hover_action
+            ):
 
                 action = view._hover_action
                 hover_rect = actions.get(action)

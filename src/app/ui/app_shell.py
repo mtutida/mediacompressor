@@ -1,21 +1,18 @@
-
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-
-from app.ui.toast_manager import ToastManager
-from app.interaction_model.event_bridge import event_bridge
-
-from app.ui.global_bar import GlobalBarWidget
-from app.ui.context_bar import SelectionActionBarWidget
-from app.ui.context_bar_widget import ContextBarWidget
-from app.ui.file_list_container import FileListContainer
-from app.ui.execution_footer import ExecutionFooterWidget
-from app.ui.global_progress import GlobalProgressWidget
-from app.ui.configuration_overlay import ConfigurationOverlay
-from app.ui.file_list_model import FileListModel
-from app.ui.selection_controller import SelectionController
-from app.interaction_model.execution_controller import execution_controller
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from app.core.app_version import APP_NAME, APP_PHASE, APP_VERSION
+from app.interaction_model.event_bridge import event_bridge
+from app.interaction_model.execution_controller import execution_controller
+from app.ui.configuration_overlay import ConfigurationOverlay
+from app.ui.context_bar import SelectionActionBarWidget
+from app.ui.context_bar_widget import ContextBarWidget
+from app.ui.execution_footer import ExecutionFooterWidget
+from app.ui.file_list_container import FileListContainer
+from app.ui.file_list_model import FileListModel
+from app.ui.global_bar import GlobalBarWidget
+from app.ui.global_progress import GlobalProgressWidget
+from app.ui.selection_controller import SelectionController
+from app.ui.toast_manager import ToastManager
 
 
 class AppShell(QWidget):
@@ -112,7 +109,8 @@ class AppShell(QWidget):
 
         self.base_layout.addWidget(self.content)
 
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
         QPushButton:hover {
             background-color: rgba(255,255,255,0.18);
         }
@@ -121,7 +119,8 @@ class AppShell(QWidget):
             border:2px solid #3a3a3a;
             border-top:none;
         }
-        """)
+        """
+        )
 
         self._update_footer_state()
 
@@ -168,7 +167,9 @@ class AppShell(QWidget):
             import os
             import subprocess
 
-            path = getattr(job, "output_path", None) or getattr(job, "source_path", None)
+            path = getattr(job, "output_path", None) or getattr(
+                job, "source_path", None
+            )
             if not path:
                 return
 
@@ -230,3 +231,17 @@ class AppShell(QWidget):
                 break
 
         self.execution_footer.set_processing_state(processing)
+
+    def changeEvent(self, event):
+        from PySide6.QtCore import QEvent
+
+        if event.type() == QEvent.PaletteChange:
+            # Theme changed (Windows light/dark)
+            self._reapply_theme()
+        super().changeEvent(event)
+
+    def _reapply_theme(self):
+        # Force widgets to repaint using updated UIPalette
+        self.update()
+        for child in self.findChildren(QWidget):
+            child.update()
