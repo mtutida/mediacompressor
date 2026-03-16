@@ -1,4 +1,3 @@
-
 from app.interaction_model.event_bridge import event_bridge
 from app.core.ffmpeg_engine import FFmpegCompressionEngine
 from app.core.output_naming import generate_output_path
@@ -11,8 +10,13 @@ class RunController:
 
     def __init__(self):
         self.engine = FFmpegCompressionEngine()
-        self.jobs = []
+
+        # active job registry (safe key)
+        self.jobs = {}
+
+        # cancel tokens for running jobs
         self.tokens = {}
+
         event_bridge.subscribe(self._on_event)
 
     def _on_event(self, event_type, payload):
@@ -20,10 +24,11 @@ class RunController:
         if event_type == "job_run_requested":
             job = payload if not isinstance(payload, dict) else payload.get("job")
             if job:
-                if job not in self.jobs:
-                    self.jobs.append(job)
+
+                # prevent duplicate execution
                 if getattr(job, 'status', None) in ('PROCESSING','RUNNING'):
                     return
+
                 self._prepare_job(job)
                 self._start_job(job)
 
@@ -41,7 +46,7 @@ class RunController:
             self._refresh_output_paths()
 
     def _refresh_output_paths(self):
-        for job in list(self.jobs):
+        for job in list(self.jobs.values()):
             if hasattr(job, "source_path"):
                 job.output_path = generate_output_path(job.source_path)
                 event_bridge.emit("job_updated", {"job": job})
@@ -79,6 +84,7 @@ class RunController:
 
         token = CancelToken()
         self.tokens[id(job)] = token
+        self.jobs[id(job)] = job
 
         t = threading.Thread(
             target=self._execute_job,
@@ -86,6 +92,10 @@ class RunController:
             daemon=True
         )
         t.start()
+
+    def _cleanup_job(self, job):
+        self.tokens.pop(id(job), None)
+        self.jobs.pop(id(job), None)
 
     def _execute_job(self, job, token):
 
@@ -99,13 +109,12 @@ class RunController:
             job.progress = 100
             job.status = "DONE"
 
-            # critical fix for UI counters
             event_bridge.emit("job_updated", {"job": job})
             event_bridge.emit("job_finished", {"job": job})
 
         except Exception as e:
 
-            job.status = "CANCELLED" if "cancelled" in str(e).lower() else "FALHA"
+            job.status = "CANCELLED" if "cancelled" in str(e).lower() else "FAILED"
             job.error = str(e)
 
             if "cancelled" in str(e).lower():
@@ -113,6 +122,9 @@ class RunController:
                 event_bridge.emit("job_updated", {"job": job})
             else:
                 event_bridge.emit("job_failed", {
-                "job": job,
-                "error": str(e)
-            })
+                    "job": job,
+                    "error": str(e)
+                })
+
+        finally:
+            self._cleanup_job(job)
