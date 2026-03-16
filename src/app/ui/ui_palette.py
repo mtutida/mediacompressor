@@ -32,6 +32,15 @@ class UIPalette:
         HOVER_DANGER = QColor(220, 40, 40, 120)
 
         PRESSED_PRIMARY = QColor(40, 110, 220, 120)
+        PROGRESS_EDGE = QColor(120, 120, 120)
+        PROGRESS_EDGE_LIGHT = QColor(90, 90, 90)
+
+        SELECTION_OVERLAY = QColor(70, 90, 120, 120)
+
+        EMPTY_DROP_BORDER = QColor(90, 90, 90)
+        EMPTY_DROP_ACTIVE = QColor(120, 170, 255)
+        EMPTY_TEXT = QColor(120, 120, 120)
+        EMPTY_TEXT_SECONDARY = QColor(130, 130, 130)
 
     else:
         # Light Theme
@@ -54,12 +63,24 @@ class UIPalette:
 
         PRESSED_PRIMARY = QColor(60, 120, 220, 120)
 
+        PROGRESS_EDGE = QColor(160, 160, 160)
+        PROGRESS_EDGE_LIGHT = QColor(200, 200, 200)
+
+        SELECTION_OVERLAY = QColor(70, 90, 120, 120)
+
+        EMPTY_DROP_BORDER = QColor(120, 120, 120)
+        EMPTY_DROP_ACTIVE = QColor(70, 130, 220)
+        EMPTY_TEXT = QColor(90, 90, 90)
+        EMPTY_TEXT_SECONDARY = QColor(110, 110, 110)
+
     # Status colors (theme independent)
     STATUS_READY = QColor(150, 150, 150)
     STATUS_ANALYZING = QColor(70, 130, 220)
     STATUS_RUNNING = QColor(0, 180, 0)
     STATUS_DONE = QColor(0, 200, 120)
     STATUS_ERROR = QColor(200, 60, 60)
+    STATUS_CANCELLED = QColor(180, 140, 80)
+    STATUS_QUEUED = QColor(120, 120, 120)
 
     STATUS_COLORS = {
         "READY": STATUS_READY,
@@ -70,4 +91,6 @@ class UIPalette:
         "COMPLETED": STATUS_DONE,
         "ERROR": STATUS_ERROR,
         "FAILED": STATUS_ERROR,
+        "CANCELLED": STATUS_CANCELLED,
+        "QUEUED": STATUS_QUEUED,
     }

@@ -34,24 +34,11 @@ COLOR_ACTION_PRIMARY = UIPalette.PRIMARY
 COLOR_PROGRESS_TRACK = UIPalette.PROGRESS_TRACK
 
 CARD_HOVER = UIPalette.CARD_HOVER
-CONTROL_HOVER_NEUTRAL = QColor(255, 255, 255, 30)
-CONTROL_HOVER_PRIMARY = QColor(70, 140, 255, 80)
-CONTROL_HOVER_DANGER = QColor(220, 40, 40, 120)
+CONTROL_HOVER_NEUTRAL = UIPalette.HOVER_NEUTRAL
+CONTROL_HOVER_PRIMARY = UIPalette.HOVER_PRIMARY
+CONTROL_HOVER_DANGER = UIPalette.HOVER_DANGER
 
-PRESSED_PRIMARY = QColor(40, 110, 220, 120)
-
-STATUS_COLORS = {
-    "READY": QColor(150, 150, 150),
-    "ANALYZING": QColor(70, 130, 220),
-    "PROCESSING": QColor(0, 180, 0),
-    "RUNNING": QColor(0, 180, 0),
-    "DONE": QColor(0, 200, 120),
-    "COMPLETED": QColor(0, 200, 120),
-    "ERROR": QColor(200, 60, 60),
-    "FAILED": QColor(200, 60, 60),
-    "CANCELLED": QColor(180, 140, 80),
-    "QUEUED": QColor(120, 120, 120),
-}
+PRESSED_PRIMARY = UIPalette.PRESSED_PRIMARY
 
 STATUS_TEXT_MAP = {
     "READY": "PRONTO",
@@ -212,7 +199,7 @@ class FileCardDelegate(QStyledItemDelegate):
         thumb = getattr(job, "thumbnail", None)
 
         status_text, raw_status = self._normalize_status(status)
-        status_color = STATUS_COLORS.get(raw_status, QColor(120, 120, 120))
+        status_color = UIPalette.STATUS_COLORS.get(raw_status, UIPalette.STATUS_QUEUED)
 
         painter.fillRect(card_rect, COLOR_BG)
         painter.setPen(COLOR_BORDER)
@@ -297,7 +284,7 @@ class FileCardDelegate(QStyledItemDelegate):
             base_width = metrics.horizontalAdvance(base)
             x += base_width
 
-            painter.setPen(QColor(90, 140, 220))
+            painter.setPen(UIPalette.PRIMARY)
             painter.drawText(
                 QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
                 Qt.AlignLeft | Qt.AlignVCenter,
@@ -412,7 +399,7 @@ class FileCardDelegate(QStyledItemDelegate):
 
         painter.drawText(progress_rect, Qt.AlignCenter, display_text)
 
-        painter.setPen(QPen(QColor(120, 120, 120), 2))
+        painter.setPen(QPen(UIPalette.PROGRESS_EDGE, 2))
         painter.drawLine(
             progress_rect.left(),
             progress_rect.top() + 2,
@@ -426,7 +413,7 @@ class FileCardDelegate(QStyledItemDelegate):
             progress_rect.bottom(),
         )
 
-        painter.setPen(QPen(QColor(90, 90, 90), 1))
+        painter.setPen(QPen(UIPalette.PROGRESS_EDGE_LIGHT, 1))
         painter.drawLine(
             progress_rect.left() + 2,
             progress_rect.top() + 1,
@@ -476,6 +463,6 @@ class FileCardDelegate(QStyledItemDelegate):
                 painter.fillRect(card_rect, CARD_HOVER)
 
         if option.state & QStyle.State_Selected:
-            painter.fillRect(card_rect, QColor(70, 90, 120, 120))
+            painter.fillRect(card_rect, UIPalette.SELECTION_OVERLAY)
 
         painter.restore()
