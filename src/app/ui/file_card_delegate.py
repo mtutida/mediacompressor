@@ -116,7 +116,7 @@ class FileCardDelegate(QStyledItemDelegate):
     ROLE_JOB = Qt.UserRole + 1
 
     THUMB_WIDTH = 160
-    ACTION_WIDTH = 180
+    ACTION_WIDTH = 140
 
     HEADER_HEIGHT = 26
     ROW_HEIGHT = 24
@@ -346,53 +346,6 @@ class FileCardDelegate(QStyledItemDelegate):
 
         painter.setPen(palette.text().color())
 
-        name_rect = QRect(info_x, rect.top(), info_width-140, self.HEADER_HEIGHT)
-
-        # detect LAST suffix pattern like:  [_something] .ext
-        suffix_start = name.rfind("[_")
-        suffix_end = name.rfind("]")
-
-        if suffix_start != -1 and suffix_end != -1 and suffix_end > suffix_start:
-            base = name[:suffix_start]
-            suffix = name[suffix_start : suffix_end + 1]
-            ext = name[suffix_end + 1 :]
-
-            x = name_rect.left()
-
-            painter.setPen(palette.text().color())
-            painter.drawText(
-                QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
-                Qt.AlignLeft | Qt.AlignVCenter,
-                base,
-            )
-
-            base_width = metrics.horizontalAdvance(base)
-            x += base_width
-
-            painter.setPen(QColor(90, 140, 220))
-            painter.drawText(
-                QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
-                Qt.AlignLeft | Qt.AlignVCenter,
-                suffix,
-            )
-
-            suffix_width = metrics.horizontalAdvance(suffix)
-            x += suffix_width
-
-            painter.setPen(palette.text().color())
-            painter.drawText(
-                QRect(x, name_rect.top(), info_width, self.HEADER_HEIGHT),
-                Qt.AlignLeft | Qt.AlignVCenter,
-                ext,
-            )
-
-        else:
-            painter.setPen(palette.text().color())
-            painter.drawText(
-                name_rect,
-                Qt.AlignLeft | Qt.AlignVCenter,
-                metrics.elidedText(name, Qt.ElideRight, info_width),
-            )
         # --- render file size (computed from source_path) ---
         size_text = None
 
@@ -439,25 +392,84 @@ class FileCardDelegate(QStyledItemDelegate):
             # except Exception:
             #     pass
 
-        if size_text:
-            original_font = painter.font()
-            font_bold = painter.font()
-            font_bold.setBold(True)
-            painter.setFont(font_bold)
+        original_font = painter.font()
+        font_bold = painter.font()
+        font_bold.setBold(True)
+        painter.setFont(font_bold)
 
-            metrics = painter.fontMetrics()
-            text_width = metrics.horizontalAdvance(size_text) + 10
+        metrics = painter.fontMetrics()
+        size_text_width = metrics.horizontalAdvance(size_text) + 10 if size_text else 0
+        size_gap = 10 if size_text else 0
+        size_rect = QRect(
+            action_x - 4 - size_text_width,
+            rect.top(),
+            size_text_width,
+            self.HEADER_HEIGHT,
+        )
+        name_right = size_rect.left() - size_gap if size_text else action_x - 14
+        name_rect = QRect(info_x, rect.top(), max(40, name_right - info_x), self.HEADER_HEIGHT)
 
-            size_rect = QRect(
-                rect.right() - self.ACTION_WIDTH - text_width,
-                rect.top(),
-                text_width,
-                self.HEADER_HEIGHT,
+        # detect LAST suffix pattern like:  [_something] .ext
+        suffix_start = name.rfind("[_")
+        suffix_end = name.rfind("]")
+
+        if suffix_start != -1 and suffix_end != -1 and suffix_end > suffix_start:
+            base = name[:suffix_start]
+            suffix = name[suffix_start : suffix_end + 1]
+            ext = name[suffix_end + 1 :]
+            full_width = (
+                metrics.horizontalAdvance(base)
+                + metrics.horizontalAdvance(suffix)
+                + metrics.horizontalAdvance(ext)
             )
 
+            if full_width <= name_rect.width():
+                x = name_rect.left()
+
+                painter.setPen(palette.text().color())
+                painter.drawText(
+                    QRect(x, name_rect.top(), name_rect.width(), self.HEADER_HEIGHT),
+                    Qt.AlignLeft | Qt.AlignVCenter,
+                    base,
+                )
+
+                x += metrics.horizontalAdvance(base)
+
+                painter.setPen(QColor(90, 140, 220))
+                painter.drawText(
+                    QRect(x, name_rect.top(), max(0, name_rect.right() - x), self.HEADER_HEIGHT),
+                    Qt.AlignLeft | Qt.AlignVCenter,
+                    suffix,
+                )
+
+                x += metrics.horizontalAdvance(suffix)
+
+                painter.setPen(palette.text().color())
+                painter.drawText(
+                    QRect(x, name_rect.top(), max(0, name_rect.right() - x), self.HEADER_HEIGHT),
+                    Qt.AlignLeft | Qt.AlignVCenter,
+                    ext,
+                )
+            else:
+                painter.setPen(palette.text().color())
+                painter.drawText(
+                    name_rect,
+                    Qt.AlignLeft | Qt.AlignVCenter,
+                    metrics.elidedText(name, Qt.ElideRight, name_rect.width()),
+                )
+        else:
+            painter.setPen(palette.text().color())
+            painter.drawText(
+                name_rect,
+                Qt.AlignLeft | Qt.AlignVCenter,
+                metrics.elidedText(name, Qt.ElideRight, name_rect.width()),
+            )
+
+        if size_text:
+            painter.setPen(palette.text().color())
             painter.drawText(size_rect, Qt.AlignRight | Qt.AlignVCenter, size_text)
 
-            painter.setFont(original_font)
+        painter.setFont(original_font)
 
         folder_rect = actions["folder"]
 
