@@ -41,7 +41,8 @@ class FileList(QListView):
         self.viewport().setAcceptDrops(True)  # IMPORTANT FIX
 
         self.setStyleSheet("QListView { background: transparent; border: none; }")
-        self.setViewportMargins(0, 0, 6, 0)
+        self.setSpacing(4)
+        self.setViewportMargins(4, 4, 4, 4)
 
     # ------------------------------------------------
     # Drag highlight

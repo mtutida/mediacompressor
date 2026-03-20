@@ -1,44 +1,54 @@
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton
 
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton
+BTN_HEIGHT = 24
+BTN_WIDTH = 132
 
-BTN_WIDTH = 180
 
 class SelectionActionBarWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("SelectionActionBarWidget")
         self.setFrameShape(QFrame.StyledPanel)
+        self.setFixedHeight(28)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(6,4,6,4)
-        layout.setSpacing(12)
+        layout.setContentsMargins(8, 1, 8, 1)
+        layout.setSpacing(6)
 
-        self.btn_config = QPushButton("Configurar")
-        self.btn_enqueue = QPushButton("Enfileirar")
+        self.title_label = QLabel("Lista de arquivos")
+        self.title_label.setObjectName("SelectionActionBarTitle")
+        self.title_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.title_label.setStyleSheet("font-weight: 600;")
+
+        # Futuro: reintroduzir botão "Perfis" aqui quando o painel de perfis existir.
         self.btn_delete = QPushButton("Excluir")
-        self.btn_clear_selection = QPushButton("Cancelar seleção")
+        self.btn_clear_selection = QPushButton("Limpar seleção")
 
-        buttons=[
-            self.btn_config,
-            self.btn_enqueue,
+        buttons = [
             self.btn_delete,
-            self.btn_clear_selection
+            self.btn_clear_selection,
         ]
 
         for b in buttons:
-            b.setFixedWidth(BTN_WIDTH)
+            b.setFixedHeight(BTN_HEIGHT)
 
-        layout.addWidget(self.btn_config)
-        layout.addWidget(self.btn_enqueue)
+        self.btn_delete.setMinimumWidth(100)
+        self.btn_clear_selection.setMinimumWidth(120)
+
+        layout.addWidget(self.title_label)
+        layout.addStretch()
         layout.addWidget(self.btn_delete)
         layout.addWidget(self.btn_clear_selection)
 
-        layout.addStretch()
-
         self.setLayout(layout)
 
-        # hidden until selection exists
-        self.setVisible(False)
+        self.set_has_selection(False)
 
-# backward compatibility alias
+    def set_has_selection(self, has_selection):
+        enabled = bool(has_selection)
+        self.btn_delete.setEnabled(enabled)
+        self.btn_clear_selection.setEnabled(enabled)
+
+
 ContextBarWidget = SelectionActionBarWidget
