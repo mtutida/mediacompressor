@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QToolButton,
 )
 
+from app.engine.encode_estimator import estimate_size_crf
 from app.engine.ffprobe_probe import probe
 from app.engine.thumbnail_generator import generate_thumbnail
 from app.interaction_model.event_bridge import event_bridge
@@ -86,16 +87,15 @@ QToolButton {
     border: 1px solid transparent;
 }
 QToolButton:hover {
-    border: 1px solid rgba(255,255,255,0.45);
+    border: 1px solid palette(highlight);
+    background: palette(button);
 }
 
 QToolButton:checked {
-    background: rgba(255,255,255,0.14);
+    background: palette(mid);
+    border: 1px solid palette(mid);
 }
 
-QToolButton:hover {
-    border: 1px solid rgba(255,255,255,0.45);
-}
 """
         )
         self.menu_button.clicked.connect(self._open_menu)
@@ -209,6 +209,8 @@ QToolButton:hover {
             codec="?",
             resolution="?",
             source_path=path,
+            source_size=None,
+            estimated_size_bytes=None,
         )
 
         event_bridge.emit("job_enqueued", {"job": job})
@@ -224,11 +226,53 @@ QToolButton:hover {
         job.duration = duration
         job.container = container
 
+        try:
+            job.source_size = os.path.getsize(job.source_path)
+            job.estimated_size_bytes = int(job.source_size * 0.8)
+        except Exception:
+            job.source_size = None
+            job.estimated_size_bytes = None
+
         event_bridge.emit("job_updated", {"job": job})
 
         threading.Thread(
             target=self._generate_thumbnail, args=(job,), daemon=True
         ).start()
+
+        if os.path.splitext(job.source_path)[1].lower() in VIDEO_EXT:
+            threading.Thread(
+                target=self._estimate_size_real, args=(job,), daemon=True
+            ).start()
+
+    def _estimate_size_real(self, job):
+        try:
+            estimated = estimate_size_crf(job.source_path)
+            if estimated is None:
+                return
+
+            source_size = getattr(job, "source_size", None)
+            if source_size is None:
+                try:
+                    source_size = os.path.getsize(job.source_path)
+                    job.source_size = source_size
+                except Exception:
+                    source_size = None
+
+            if source_size:
+                estimated = min(int(estimated), int(source_size * 0.95))
+
+            if estimated <= 0:
+                return
+
+            current = getattr(job, "estimated_size_bytes", None)
+            if current == estimated:
+                return
+
+            job.estimated_size_bytes = estimated
+            event_bridge.emit("job_updated", {"job": job})
+
+        except Exception:
+            return
 
     def _generate_thumbnail(self, job):
         thumb = None

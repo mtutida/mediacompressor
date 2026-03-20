@@ -18,7 +18,7 @@ class ToastManager:
             """
             QLabel {
                 background: rgba(30,30,30,220);
-                color: white;
+                color: palette(text);
                 border-radius: 6px;
                 padding: 6px 12px;
                 font-size: 12px;

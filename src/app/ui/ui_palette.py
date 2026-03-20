@@ -2,72 +2,68 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
 
-def _is_dark_theme():
-    app = QApplication.instance()
-    if not app:
-        return True
-    palette = app.palette()
-    return palette.color(QPalette.Window).lightness() < 128
-
-
 class UIPalette:
+    """Unified UI palette derived from Qt system palette with accent integration."""
 
-    if _is_dark_theme():
-        # Dark Theme (current design)
-        CARD_BG = QColor(43, 43, 43)
-        CARD_BORDER = QColor(90, 90, 90)
-        CARD_HEADER = QColor(53, 53, 53)
+    DARK = False
 
-        TEXT = QColor(220, 220, 220)
-        META = QColor(170, 170, 170)
+    CARD_BG = None
+    CARD_BORDER = None
+    TEXT_PRIMARY = None
+    TEXT_SECONDARY = None
 
-        SEPARATOR = QColor(70, 70, 70)
+    FOOTER_BG = None
+    FOOTER_BORDER = None
 
-        PRIMARY = QColor(90, 140, 220)
-        PROGRESS_TRACK = QColor(20, 20, 20)
+    BUTTON_BG = None
+    BUTTON_BG_HOVER = None
+    BUTTON_BG_ACTIVE = None
 
-        CARD_HOVER = QColor(255, 255, 255, 20)
-        HOVER_NEUTRAL = QColor(255, 255, 255, 30)
-        HOVER_PRIMARY = QColor(70, 140, 255, 80)
-        HOVER_DANGER = QColor(220, 40, 40, 120)
+    ACCENT = None
+    ACCENT_HOVER = None
+    ACCENT_ACTIVE = None
+    ACCENT_TEXT = None
+    
+    BUTTON_TEXT = None
+    BUTTON_TEXT_DISABLED = None
 
-        PRESSED_PRIMARY = QColor(40, 110, 220, 120)
+    @classmethod
+    def reload(cls):
+        app = QApplication.instance()
+        if not app:
+            return
 
-    else:
-        # Light Theme
-        CARD_BG = QColor(245, 245, 245)
-        CARD_BORDER = QColor(200, 200, 200)
-        CARD_HEADER = QColor(230, 230, 230)
+        palette: QPalette = app.palette()
 
-        TEXT = QColor(40, 40, 40)
-        META = QColor(90, 90, 90)
+        window = palette.color(QPalette.Window)
+        text = palette.color(QPalette.WindowText)
+        base = palette.color(QPalette.Base)
+        highlight = palette.color(QPalette.Highlight)
 
-        SEPARATOR = QColor(210, 210, 210)
+        cls.DARK = window.lightness() < 128
 
-        PRIMARY = QColor(60, 120, 220)
-        PROGRESS_TRACK = QColor(230, 230, 230)
+        cls.CARD_BG = base
+        cls.CARD_BORDER = palette.color(QPalette.Mid)
 
-        CARD_HOVER = QColor(0, 0, 0, 10)
-        HOVER_NEUTRAL = QColor(0, 0, 0, 20)
-        HOVER_PRIMARY = QColor(60, 120, 220, 80)
-        HOVER_DANGER = QColor(220, 60, 60, 120)
+        cls.TEXT_PRIMARY = text
+        cls.TEXT_SECONDARY = palette.color(QPalette.Disabled, QPalette.WindowText)
 
-        PRESSED_PRIMARY = QColor(60, 120, 220, 120)
+        cls.FOOTER_BG = window
+        cls.FOOTER_BORDER = palette.color(QPalette.Dark)
 
-    # Status colors (theme independent)
-    STATUS_READY = QColor(150, 150, 150)
-    STATUS_ANALYZING = QColor(70, 130, 220)
-    STATUS_RUNNING = QColor(0, 180, 0)
-    STATUS_DONE = QColor(0, 200, 120)
-    STATUS_ERROR = QColor(200, 60, 60)
+        cls.BUTTON_BG = palette.color(QPalette.Button)
+        cls.BUTTON_BG_HOVER = highlight.lighter(140)
+        cls.BUTTON_BG_ACTIVE = highlight
 
-    STATUS_COLORS = {
-        "READY": STATUS_READY,
-        "ANALYZING": STATUS_ANALYZING,
-        "PROCESSING": STATUS_RUNNING,
-        "RUNNING": STATUS_RUNNING,
-        "DONE": STATUS_DONE,
-        "COMPLETED": STATUS_DONE,
-        "ERROR": STATUS_ERROR,
-        "FAILED": STATUS_ERROR,
-    }
+        cls.BUTTON_TEXT = palette.color(QPalette.ButtonText)
+        cls.BUTTON_TEXT_DISABLED = palette.color(QPalette.Disabled, QPalette.ButtonText)
+
+        # Accent integration
+        cls.ACCENT = highlight
+        cls.ACCENT_HOVER = highlight.lighter(120)
+        cls.ACCENT_ACTIVE = highlight.darker(120)
+        cls.ACCENT_TEXT = palette.color(QPalette.HighlightedText)
+
+
+# initialize palette once
+UIPalette.reload()

@@ -88,21 +88,21 @@ class ContextBarWidget(QFrame):
     def _resolve_state(self, total, active, queued, done, error):
 
         if total == 0:
-            return "Ocioso", "#9a9a9a"
+            return "Ocioso", "palette(mid)"
 
         if error > 0:
-            return "Com erro", "#ff5f56"
+            return "Com erro", "palette(highlight)"
 
         if active > 0:
-            return "Processando", "#ffb020"
+            return "Processando", "palette(highlight)"
 
         if queued > 0:
-            return "Na fila", "#4aa3ff"
+            return "Na fila", "palette(highlight)"
 
         if done == total:
-            return "Concluído", "#3fb950"
+            return "Concluído", "palette(highlight)"
 
-        return "Ocioso", "#9a9a9a"
+        return "Ocioso", "palette(mid)"
 
     # ------------------------------------------------
 

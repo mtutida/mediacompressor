@@ -80,6 +80,7 @@ class AppShell(QWidget):
 
         self.content = QWidget()
         self.content.setObjectName("MainContent")
+        self.content.setAutoFillBackground(True)
 
         content_layout = QVBoxLayout(self.content)
         content_layout.setContentsMargins(0, 0, 0, 0)
@@ -111,15 +112,18 @@ class AppShell(QWidget):
 
         self.setStyleSheet(
             """
-        QPushButton:hover {
-            background-color: rgba(255,255,255,0.18);
-        }
+            QWidget#MainContent{
+                background: palette(alternate-base);
+                border:2px solid palette(midlight);
+                border-top:none;
+            }
 
-        QWidget#MainContent{
-            border:2px solid #3a3a3a;
-            border-top:none;
-        }
-        """
+            QPushButton:hover {
+                border: 1px solid palette(highlight);
+                background: palette(midlight);
+                border-radius:6px;
+            }
+            """
         )
 
         self._update_footer_state()
@@ -241,7 +245,15 @@ class AppShell(QWidget):
         super().changeEvent(event)
 
     def _reapply_theme(self):
-        # Force widgets to repaint using updated UIPalette
-        self.update()
-        for child in self.findChildren(QWidget):
-            child.update()
+        from PySide6.QtWidgets import QApplication
+
+        from app.ui.ui_palette import UIPalette
+
+        UIPalette.reload()
+
+        app = QApplication.instance()
+
+        for w in app.allWidgets():
+            w.style().unpolish(w)
+            w.style().polish(w)
+            w.update()

@@ -1,6 +1,5 @@
-
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractItemView, QListView, QStyleOptionViewItem
 
 from app.interaction_model.event_bridge import event_bridge
@@ -40,9 +39,8 @@ class FileList(QListView):
         self.setAcceptDrops(True)
         self.viewport().setAcceptDrops(True)  # IMPORTANT FIX
 
-        self.setStyleSheet(
-            "QListView { background: transparent; border: none; }"
-        )
+        self.setStyleSheet("QListView { background: transparent; border: none; }")
+        self.setViewportMargins(0, 0, 6, 0)
 
     # ------------------------------------------------
     # Drag highlight
@@ -104,79 +102,127 @@ class FileList(QListView):
             return
 
         painter = QPainter(self.viewport())
-        painter.setRenderHint(QPainter.Antialiasing)
 
-        rect = self.viewport().rect()
-        center_y = rect.center().y()
+        if not painter.isActive():
+            return
 
-        pen = QPen(QColor(90, 90, 90))
-        pen.setStyle(Qt.DashLine)
-        pen.setWidth(2)
+        try:
+            painter.setRenderHint(QPainter.Antialiasing)
 
-        if self._drag_active:
-            pen.setColor(QColor(120, 170, 255))
+            rect = self.viewport().rect()
+            center_y = rect.center().y()
 
-        painter.setPen(pen)
-        painter.setBrush(Qt.NoBrush)
+            palette = self.palette()
 
-        drop_rect = rect.adjusted(40, 40, -40, -40)
-        painter.drawRoundedRect(drop_rect, 8, 8)
+            secondary = palette.text().color()
+            secondary.setAlpha(160)
 
-        font = painter.font()
-        font.setPointSize(34)
-        painter.setFont(font)
+            # -------------------------
+            # Drop zone border
+            # -------------------------
 
-        painter.setPen(QColor(120, 120, 120))
+            # pen = QPen(palette.mid().color())
 
-        painter.drawText(
-            rect.adjusted(0, center_y - 120, 0, 0),
-            Qt.AlignHCenter,
-            "⬆"
-        )
+            border = palette.text().color()
+            border.setAlpha(80)
+            pen = QPen(border)
 
-        font.setPointSize(20)
-        font.setBold(True)
-        painter.setFont(font)
+            pen.setStyle(Qt.DashLine)
+            pen.setWidth(2)
 
-        title = "Solte os arquivos para adicionar" if self._drag_active else "Arraste arquivos aqui"
+            if self._drag_active:
+                pen.setColor(palette.highlight().color())
 
-        painter.drawText(
-            rect.adjusted(0, center_y - 70, 0, 0),
-            Qt.AlignHCenter,
-            title
-        )
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
 
-        font.setPointSize(12)
-        font.setBold(False)
-        painter.setFont(font)
+            drop_rect = rect.adjusted(60, 60, -60, -60)
+            painter.drawRoundedRect(drop_rect, 10, 10)
 
-        painter.setPen(QColor(130, 130, 130))
+            # -------------------------
+            # Icon
+            # -------------------------
 
-        painter.drawText(
-            rect.adjusted(0, center_y - 30, 0, 0),
-            Qt.AlignHCenter,
-            "ou use os botões acima"
-        )
+            font = painter.font()
+            font.setPointSize(40)
+            painter.setFont(font)
 
-        painter.setPen(QColor(100, 100, 100))
+            painter.setPen(palette.text().color())
 
-        painter.drawText(
-            rect.adjusted(0, center_y + 0, 0, 0),
-            Qt.AlignHCenter,
-            "Adicionar → escolher arquivos e configurar saída"
-        )
+            painter.drawText(rect.adjusted(0, center_y - 140, 0, 0), Qt.AlignHCenter, "⬆")
 
-        painter.drawText(
-            rect.adjusted(0, center_y + 22, 0, 0),
-            Qt.AlignHCenter,
-            "Adicionar rápido → escolher arquivos e adicionar direto"
-        )
+            # -------------------------
+            # Title
+            # -------------------------
 
-        painter.drawText(
-            rect.adjusted(0, center_y + 44, 0, 0),
-            Qt.AlignHCenter,
-            "Importar pasta → adicionar todos os arquivos da pasta"
-        )
+            font.setPointSize(22)
+            font.setBold(True)
+            painter.setFont(font)
+
+            title = (
+                "Solte os arquivos para adicionar"
+                if self._drag_active
+                else "Arraste arquivos aqui"
+            )
+
+            painter.drawText(rect.adjusted(0, center_y - 70, 0, 0), Qt.AlignHCenter, title)
+
+            # -------------------------
+            # Subtitle
+            # -------------------------
+
+            font.setPointSize(13)
+            font.setBold(False)
+            painter.setFont(font)
+
+            painter.setPen(secondary)
+
+            painter.drawText(
+                rect.adjusted(0, center_y - 10, 0, 0),
+                Qt.AlignHCenter,
+                'ou clique em "Adicionar"',
+            )
+
+            # -------------------------
+            # Separator
+            # -------------------------
+
+            sep_y = center_y - 20
+
+            painter.setPen(QPen(secondary, 1))
+            painter.drawLine(rect.center().x() - 140, sep_y, rect.center().x() + 140, sep_y)
+
+            # -------------------------
+            # Instructions
+            # -------------------------
+
+            font.setPointSize(11)
+            painter.setFont(font)
+
+            painter.setPen(secondary)
+
+            painter.drawText(
+                rect.adjusted(0, center_y + 30, 0, 0),
+                Qt.AlignHCenter,
+                "[ Adicionar ] → escolher arquivos e configurar saída",
+            )
+
+            painter.drawText(
+                rect.adjusted(0, center_y + 55, 0, 0),
+                Qt.AlignHCenter,
+                "[ Adicionar rápido ] → adicionar arquivo direto na fila",
+            )
+
+            painter.drawText(
+                rect.adjusted(0, center_y + 80, 0, 0),
+                Qt.AlignHCenter,
+                "[ Importar pasta ] → adicionar todos os arquivos da pasta",
+            )
+
+        finally:
+            painter.end()
+
+
 
     # ------------------------------------------------
     # Hover detection
@@ -273,7 +319,7 @@ class FileList(QListView):
 
         if rects["run"].contains(pos):
             status = getattr(job, "status", "READY")
-            if status in ("RUNNING","PROCESSING"):
+            if status in ("RUNNING", "PROCESSING", "QUEUED"):
                 event_bridge.emit("job_cancel_requested", job)
             else:
                 event_bridge.emit("job_run_requested", job)
@@ -296,15 +342,84 @@ class FileList(QListView):
         if pos.x() >= action_column_start:
             return
 
-
         already_selected = self.selectionModel().isSelected(index)
 
         super().mousePressEvent(event)
 
         if already_selected:
             from PySide6.QtCore import QItemSelectionModel
-            self.selectionModel().select(
-                index,
-                QItemSelectionModel.Deselect
-            )
 
+            self.selectionModel().select(index, QItemSelectionModel.Deselect)
+
+
+    # ------------------------------------------------
+    # Keyboard shortcuts
+    # ------------------------------------------------
+
+    def keyPressEvent(self, event):
+
+        if event.key() == Qt.Key_Delete:
+
+            indexes = self.selectedIndexes()
+            if not indexes:
+                return
+
+            jobs = []
+            for index in indexes:
+                job = index.data(self.delegate.ROLE_JOB)
+                if job:
+                    jobs.append(job)
+
+            if not jobs:
+                return
+
+            from PySide6.QtWidgets import QMessageBox, QCheckBox
+            from app.ancillary.configuration import ConfigurationService
+
+            cfg_service = ConfigurationService.instance()
+            cfg = cfg_service.get()
+
+            if cfg.confirm_delete:
+
+                # collect job names for preview
+                names = []
+                for job in jobs:
+                    name = getattr(job, "file_name", None)
+                    if name:
+                        names.append(name)
+
+                preview = "\n".join(names[:3])
+                if len(names) > 3:
+                    preview += f"\n... e mais {len(names) - 3}"
+
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Remover itens da fila")
+                msg.setText(f"Remover {len(jobs)} item(ns) selecionado(s)?")
+                if preview:
+                    msg.setInformativeText(preview)
+
+                msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+                msg.setDefaultButton(QMessageBox.Cancel)
+
+                checkbox = QCheckBox("Não mostrar novamente")
+                msg.setCheckBox(checkbox)
+
+                result = msg.exec()
+
+                if checkbox.isChecked():
+                    cfg_service.update(confirm_delete=False)
+
+                if result != QMessageBox.Yes:
+                    return
+
+            seen = set()
+            for job in jobs:
+                if id(job) in seen:
+                    continue
+                seen.add(id(job))
+
+                event_bridge.emit("job_remove_requested", job)
+
+            return
+
+        super().keyPressEvent(event)

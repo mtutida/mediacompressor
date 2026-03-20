@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 from enum import Enum, auto
 from typing import Callable, Optional
 import threading
+from app.interaction_model.event_bridge import event_bridge
 
 
 class JobStatus(Enum):
@@ -20,6 +21,8 @@ class Job:
     job_id: UUID = field(default_factory=uuid4)
     status: JobStatus = field(default=JobStatus.PENDING)
     error: Optional[str] = field(default=None)
+
+    estimated_size_bytes: Optional[float] = field(default=None)
 
     _cancel_requested: bool = field(default=False, init=False, repr=False)
     _cancel_lock: threading.Lock = field(
@@ -64,6 +67,16 @@ class Job:
             error=self.error
         )
 
+
+
+
+    def compute_estimate_async(self, estimator_fn):
+        try:
+            if self.estimated_size_bytes is None:
+                self.estimated_size_bytes = estimator_fn()
+                event_bridge.emit("job_updated", {"job": self})
+        except Exception as e:
+            print("ESTIMATE ERROR:", e)
 
     def persist_snapshot(self, repository):
         snapshot = self.create_snapshot()

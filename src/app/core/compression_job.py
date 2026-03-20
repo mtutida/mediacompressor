@@ -34,3 +34,21 @@ class CompressionJob(Job):
         self.video_bitrate = video_bitrate
         self.audio_bitrate = audio_bitrate
         self.preset = preset
+
+        # --- file size for UI ---
+        import os
+        self.source_path = input_path
+        self.source_size = None
+        try:
+            s=os.path.getsize(input_path)
+            size=float(s)
+            for unit in ["B","KB","MB","GB","TB"]:
+                if size<1024:
+                    self.source_size=f"{size:.0f} {unit}"
+                    break
+                size/=1024
+        except Exception:
+            self.source_size=None
+
+        self.estimated_size=None
+

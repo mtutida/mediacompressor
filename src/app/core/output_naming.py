@@ -1,7 +1,27 @@
-
 import os
 import datetime
 from app.ancillary.configuration import ConfigurationService
+
+
+def _normalize_naming_mode(value):
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        mapping = {
+            "original": 0,
+            "suffix": 1,
+            "pattern": 1,
+            "timestamp": 2,
+            "date": 2,
+        }
+        return mapping.get(normalized, 0)
+
+    try:
+        value = int(value)
+    except (TypeError, ValueError):
+        return 0
+
+    return value if value in (0, 1, 2) else 0
+
 
 def generate_output_path(input_path):
     cfg = ConfigurationService.instance().get()
@@ -16,7 +36,7 @@ def generate_output_path(input_path):
         directory = cfg.output_directory or base_dir
 
     # naming mode
-    mode = getattr(cfg, "output_naming_mode", 0)
+    mode = _normalize_naming_mode(getattr(cfg, "output_naming_mode", 0))
 
     if mode == 0:
         output_name = name + ext
@@ -36,7 +56,7 @@ def generate_output_path(input_path):
 
         output_name = name + suffix + ext
 
-    elif mode == 2:
+    else:  # mode == 2
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M")
         output_name = f"{name}_{ts}{ext}"
 

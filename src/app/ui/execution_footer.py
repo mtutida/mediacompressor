@@ -1,18 +1,55 @@
-from app.interaction_model.event_bridge import event_bridge
-
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QSizePolicy
 
+from app.interaction_model.event_bridge import event_bridge
+
 BTN_WIDTH = 210
+
 
 class ExecutionFooterWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        # from PySide6.QtWidgets import QGraphicsDropShadowEffect
+        # from PySide6.QtGui import QColor
+
+        # shadow = QGraphicsDropShadowEffect(self)
+        # shadow.setBlurRadius(12)
+        # shadow.setOffset(0, -2)
+        # shadow.setColor(QColor(0, 0, 0, 80))
+
+        # self.setGraphicsEffect(shadow)
+
         self.setObjectName("ExecutionFooterWidget")
         self.setFrameShape(QFrame.NoFrame)
-        self.setStyleSheet("QFrame { background: transparent; }")
+
+        self.setStyleSheet(
+            """
+        #ExecutionFooterWidget #ExitButton {
+            border: 1px solid palette(mid);
+            border-radius: 6px;
+        }
+        """
+        )
+
+        #         self.setStyleSheet("""
+        # QFrame {
+        #     background: transparent;
+        # }
+
+        # #ExecutionFooterWidget QPushButton {
+        #     border:1px solid palette(mid);
+        #     border-radius:6px;
+        # }
+
+        # #ExecutionFooterWidget QPushButton:disabled {
+        #     color: palette(disabled, button-text);
+        #     #background: palette(window);
+        #     #border:1px solid palette(mid);
+        # }
+        # """)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(4,4,4,4)
+        layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(3)
 
         self.btn_compress = QPushButton("Comprimir")
@@ -24,25 +61,25 @@ class ExecutionFooterWidget(QFrame):
         self.btn_clear_all = QPushButton("Limpar Tudo")
         self.btn_exit = QPushButton("Sair")
         self.btn_exit.setFixedWidth(90)
-        self.btn_exit.setMinimumHeight(36)
+        # self.btn_exit.setMinimumHeight(36)
 
-        buttons=[
+        buttons = [
             self.btn_compress,
             self.btn_compress_all,
             self.btn_clear_all,
-            self.btn_exit
+            self.btn_exit,
         ]
 
-        
-        
         for b in [
             self.btn_compress,
             self.btn_compress_all,
             self.btn_cancel,
             self.btn_cancel_all,
-            self.btn_clear_all
+            self.btn_clear_all,
+            self.btn_exit,
         ]:
             b.setMinimumWidth(120)
+            b.setMinimumHeight(36)
             b.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         layout.addWidget(self.btn_compress)
@@ -51,13 +88,15 @@ class ExecutionFooterWidget(QFrame):
         layout.addWidget(self.btn_cancel_all)
         layout.addWidget(self.btn_clear_all)
 
-        
-
         layout.addWidget(self.btn_exit)
 
         self.btn_clear_all.clicked.connect(self._clear_all)
-        self.btn_cancel.clicked.connect(lambda: event_bridge.emit("cancel_selected_requested", None))
-        self.btn_cancel_all.clicked.connect(lambda: event_bridge.emit("cancel_all_requested", None))
+        self.btn_cancel.clicked.connect(
+            lambda: event_bridge.emit("cancel_selected_requested", None)
+        )
+        self.btn_cancel_all.clicked.connect(
+            lambda: event_bridge.emit("cancel_all_requested", None)
+        )
 
         self.btn_exit.clicked.connect(self._request_shutdown)
 
@@ -65,7 +104,6 @@ class ExecutionFooterWidget(QFrame):
 
     def _request_shutdown(self):
         event_bridge.emit("shutdown_requested", None)
-
 
     def _clear_all(self):
         event_bridge.emit("clear_all_jobs", None)
