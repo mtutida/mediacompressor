@@ -21,8 +21,8 @@ class FileListContainer(QFrame):
             """
         QFrame#FileListContainer {
 
-            border:1px solid palette(midlight);
-            border-radius:6px;
+            border:2px solid palette(midlight);
+            border-radius:4px;
             padding:1px;
         }
         """

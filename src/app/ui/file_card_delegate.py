@@ -267,9 +267,9 @@ class FileCardDelegate(QStyledItemDelegate):
         status_color = STATUS_COLORS.get(raw_status, QColor(120, 120, 120))
 
         painter.fillRect(card_rect, palette.base())
-        border = palette.text().color()
-        border.setAlpha(60)
-        painter.setPen(border)
+        border = QColor(70, 140, 255)
+        border.setAlpha(145)
+        painter.setPen(QPen(border, 1.2))
         painter.drawRect(card_rect.adjusted(0, 0, -1, -1))
 
         thumb_rect = QRect(

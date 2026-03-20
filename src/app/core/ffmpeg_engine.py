@@ -1,8 +1,8 @@
-
 import subprocess
 import os
 import re
 import shlex
+from collections import deque
 
 
 class FFmpegCompressionEngine:
@@ -81,8 +81,10 @@ class FFmpegCompressionEngine:
         )
 
         last_progress = 0
+        stderr_tail = deque(maxlen=40)
 
         for line in process.stderr:
+            stderr_tail.append(line.rstrip())
 
             if cancel_token and cancel_token.is_cancelled():
                 process.kill()
@@ -107,6 +109,9 @@ class FFmpegCompressionEngine:
         process.wait()
 
         if process.returncode != 0:
+            stderr_excerpt = "\n".join(line for line in stderr_tail if line.strip())
+            if stderr_excerpt:
+                raise Exception(f"FFmpeg terminou com erro:\n{stderr_excerpt}")
             raise Exception("FFmpeg terminou com erro")
 
         if hasattr(job, "set_progress"):

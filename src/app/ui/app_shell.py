@@ -88,15 +88,15 @@ class AppShell(QWidget):
 
         main_container = QWidget()
         main_layout = QVBoxLayout(main_container)
-        main_layout.setContentsMargins(2, 0, 2, 0)
-        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(6, 6, 6, 6)
+        main_layout.setSpacing(6)
 
         main_layout.addWidget(self.global_bar)
 
         middle_container = QWidget()
         middle_layout = QVBoxLayout(middle_container)
-        middle_layout.setContentsMargins(6, 0, 6, 0)
-        middle_layout.setSpacing(0)
+        middle_layout.setContentsMargins(0, 0, 0, 0)
+        middle_layout.setSpacing(6)
 
         middle_layout.addWidget(self.file_list_container, 1)
         middle_layout.addWidget(self.selection_bar)
@@ -112,16 +112,31 @@ class AppShell(QWidget):
 
         self.setStyleSheet(
             """
-            QWidget#MainContent{
+            QWidget#MainContent {
                 background: palette(alternate-base);
-                border:2px solid palette(midlight);
-                border-top:none;
+                border: 2px solid palette(midlight);
+                border-top: none;
+            }
+
+            QFrame#GlobalBarWidget,
+            QFrame#SelectionActionBarWidget,
+            QFrame#ContextBarWidget,
+            QFrame#ExecutionFooterWidget {
+                background: palette(base);
+                border: 1px solid palette(midlight);
+                border-radius: 4px;
+            }
+
+            QFrame#GlobalBarWidget,
+            QFrame#SelectionActionBarWidget,
+            QFrame#ExecutionFooterWidget {
+                padding: 2px;
             }
 
             QPushButton:hover {
                 border: 1px solid palette(highlight);
                 background: palette(midlight);
-                border-radius:6px;
+                border-radius: 4px;
             }
             """
         )

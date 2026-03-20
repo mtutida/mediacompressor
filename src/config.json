@@ -1,7 +1,7 @@
 {
   "confirm_delete": true,
   "auto_open_configuration_after_import": false,
-  "output_directory": "d:\\teste2",
+  "output_directory": "d:\\teste3",
   "use_source_directory": false,
   "output_naming_mode": 1,
   "output_suffix": "compact",

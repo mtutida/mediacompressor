@@ -6,7 +6,7 @@ BTN_WIDTH = 180
 class SelectionActionBarWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setObjectName("ContextBarWidget")
+        self.setObjectName("SelectionActionBarWidget")
         self.setFrameShape(QFrame.StyledPanel)
 
         layout = QHBoxLayout(self)

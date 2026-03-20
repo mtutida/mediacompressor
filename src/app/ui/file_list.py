@@ -3,6 +3,7 @@ from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractItemView, QListView, QStyleOptionViewItem
 
 from app.interaction_model.event_bridge import event_bridge
+from app.interaction_model.execution_controller import execution_controller
 from app.ui.file_card_delegate import FileCardDelegate
 
 
@@ -322,7 +323,7 @@ class FileList(QListView):
             if status in ("RUNNING", "PROCESSING", "QUEUED"):
                 event_bridge.emit("job_cancel_requested", job)
             else:
-                event_bridge.emit("job_run_requested", job)
+                execution_controller.run_job(job)
             return
 
         if rects["settings"].contains(pos):

@@ -26,7 +26,7 @@ class ExecutionFooterWidget(QFrame):
             """
         #ExecutionFooterWidget #ExitButton {
             border: 1px solid palette(mid);
-            border-radius: 6px;
+            border-radius: 4px;
         }
         """
         )
@@ -38,7 +38,7 @@ class ExecutionFooterWidget(QFrame):
 
         # #ExecutionFooterWidget QPushButton {
         #     border:1px solid palette(mid);
-        #     border-radius:6px;
+        #     border-radius:4px;
         # }
 
         # #ExecutionFooterWidget QPushButton:disabled {

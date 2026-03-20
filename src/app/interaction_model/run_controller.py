@@ -7,6 +7,8 @@ import threading
 from collections import deque
 from app.engine.cancel_token import CancelToken
 
+import traceback
+
 
 class RunController:
 
@@ -187,6 +189,11 @@ class RunController:
 
             job.status = "CANCELLED" if "cancelled" in str(e).lower() else "FAILED"
             job.error = str(e)
+
+            print(f"[RunController] Job failed: {getattr(job, 'name', getattr(job, 'source_path', 'unknown'))}")
+            print(f"[RunController] Status: {job.status}")
+            print(f"[RunController] Error: {job.error}")
+            traceback.print_exc()
 
             if "cancelled" in str(e).lower():
                 job.progress = 0

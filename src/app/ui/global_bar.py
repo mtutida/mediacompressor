@@ -83,7 +83,7 @@ class GlobalBarWidget(QFrame):
             """
 QToolButton {
     background: transparent;
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid transparent;
 }
 QToolButton:hover {
