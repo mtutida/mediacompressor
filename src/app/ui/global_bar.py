@@ -334,7 +334,7 @@ QToolButton:checked {
             )
 
         elif action == act_exit:
-            QApplication.quit()
+            event_bridge.emit("shutdown_requested", None)
 
     def _select_all(self):
         parent = self.window()

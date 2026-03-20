@@ -186,13 +186,23 @@ class AppShell(QWidget):
 
     def _confirm_shutdown_while_processing(self):
 
-        return QMessageBox.question(
-            self,
-            "Encerrar durante processamento",
-            "Há compressão em andamento.\nDeseja sair mesmo assim?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        ) == QMessageBox.Yes
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Question)
+        msg.setWindowTitle("Encerrar durante processamento")
+        msg.setText("Há compressão em andamento.\nDeseja sair mesmo assim?")
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.No)
+
+        yes_button = msg.button(QMessageBox.Yes)
+        no_button = msg.button(QMessageBox.No)
+
+        if yes_button is not None:
+            yes_button.setText("Sim")
+
+        if no_button is not None:
+            no_button.setText("Não")
+
+        return msg.exec() == QMessageBox.Yes
 
     def closeEvent(self, event):
         if self._has_processing_jobs() and not self._confirm_shutdown_while_processing():
