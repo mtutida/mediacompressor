@@ -106,7 +106,7 @@ class ExecutionFooterWidget(QFrame):
         event_bridge.emit("shutdown_requested", None)
 
     def _clear_all(self):
-        event_bridge.emit("clear_all_jobs", None)
+        event_bridge.emit("clear_all_requested", None)
 
     def set_processing_state(self, processing: bool):
         if processing:

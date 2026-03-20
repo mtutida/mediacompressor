@@ -187,18 +187,22 @@ class RunController:
 
         except Exception as e:
 
-            job.status = "CANCELLED" if "cancelled" in str(e).lower() else "FAILED"
-            job.error = str(e)
+            is_cancel = "cancelled" in str(e).lower()
 
-            print(f"[RunController] Job failed: {getattr(job, 'name', getattr(job, 'source_path', 'unknown'))}")
-            print(f"[RunController] Status: {job.status}")
-            print(f"[RunController] Error: {job.error}")
-            traceback.print_exc()
-
-            if "cancelled" in str(e).lower():
+            if is_cancel:
+                job.status = "CANCELLED"
+                job.error = None
                 job.progress = 0
                 event_bridge.emit("job_updated", {"job": job})
             else:
+                job.status = "FAILED"
+                job.error = str(e)
+
+                print(f"[RunController] Job failed: {getattr(job, 'name', getattr(job, 'source_path', 'unknown'))}")
+                print(f"[RunController] Status: {job.status}")
+                print(f"[RunController] Error: {job.error}")
+                traceback.print_exc()
+
                 event_bridge.emit("job_failed", {
                     "job": job,
                     "error": str(e)

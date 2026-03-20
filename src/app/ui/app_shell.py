@@ -169,6 +169,19 @@ class AppShell(QWidget):
             if job and getattr(job, "status", None) in ("PROCESSING", "RUNNING"):
                 return True
 
+        run_controller = getattr(self.ctx, "run_controller", None)
+
+        if not run_controller:
+            return False
+
+        if getattr(run_controller, "jobs", None):
+            return True
+
+        queue = getattr(run_controller, "_queue", None)
+
+        if queue:
+            return len(queue) > 0
+
         return False
 
     def _confirm_shutdown_while_processing(self):
@@ -192,6 +205,14 @@ class AppShell(QWidget):
 
         if event_type == "shutdown_requested":
             self.close()
+
+        elif event_type == "clear_all_requested":
+
+            if self._has_processing_jobs():
+                self._warn_clear_while_processing()
+                return
+
+            event_bridge.emit("clear_all_jobs", None)
 
         elif event_type == "duplicate_files_ignored":
 
@@ -279,6 +300,7 @@ class AppShell(QWidget):
                 processing = True
                 break
 
+        self.execution_footer.btn_clear_all.setEnabled(not processing)
         self.execution_footer.set_processing_state(processing)
 
     def changeEvent(self, event):
