@@ -334,12 +334,10 @@ QToolButton:checked {
             )
 
         elif action == act_exit:
-            if parent is not None:
-                parent.close()
-            else:
-                QApplication.quit()
+            QApplication.quit()
 
     def _select_all(self):
         parent = self.window()
         if hasattr(parent, "file_list"):
             parent.file_list.selectAll()
+            parent.file_list.setFocus()
