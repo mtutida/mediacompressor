@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QMessageBox, QVBoxLayout, QWidget
 
 from app.core.app_version import APP_NAME, APP_PHASE, APP_VERSION
 from app.interaction_model.event_bridge import event_bridge
@@ -142,11 +142,41 @@ class AppShell(QWidget):
         dialog = ConfigurationOverlay(self)
         dialog.exec()
 
+    def _has_processing_jobs(self):
+
+        model = self.file_list.model()
+        total = model.rowCount()
+
+        for r in range(total):
+            index = model.index(r)
+            job = model.data(index, FileListModel.ROLE_JOB)
+
+            if job and getattr(job, "status", None) in ("PROCESSING", "RUNNING"):
+                return True
+
+        return False
+
+    def _confirm_shutdown_while_processing(self):
+
+        return QMessageBox.question(
+            self,
+            "Encerrar durante processamento",
+            "Há compressão em andamento.\nDeseja sair mesmo assim?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        ) == QMessageBox.Yes
+
+    def closeEvent(self, event):
+        if self._has_processing_jobs() and not self._confirm_shutdown_while_processing():
+            event.ignore()
+            return
+
+        super().closeEvent(event)
+
     def _on_app_event(self, event_type, payload):
-        from PySide6.QtWidgets import QApplication
 
         if event_type == "shutdown_requested":
-            QApplication.quit()
+            self.close()
 
         elif event_type == "duplicate_files_ignored":
 

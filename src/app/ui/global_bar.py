@@ -334,7 +334,10 @@ QToolButton:checked {
             )
 
         elif action == act_exit:
-            QApplication.quit()
+            if parent is not None:
+                parent.close()
+            else:
+                QApplication.quit()
 
     def _select_all(self):
         parent = self.window()
