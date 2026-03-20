@@ -85,7 +85,7 @@ class ContextBarWidget(QFrame):
 
     # ------------------------------------------------
 
-    def _resolve_state(self, total, active, queued, done, error):
+    def _resolve_state(self, total, active, ready, queued, done, error):
 
         if total == 0:
             return "Ocioso", "palette(mid)"
@@ -99,6 +99,9 @@ class ContextBarWidget(QFrame):
         if queued > 0:
             return "Na fila", "palette(highlight)"
 
+        if ready > 0:
+            return "Pronto", "palette(highlight)"
+
         if done == total:
             return "Concluído", "palette(highlight)"
 
@@ -111,6 +114,7 @@ class ContextBarWidget(QFrame):
         total = len(self._jobs)
 
         active = 0
+        ready = 0
         queued = 0
         done = 0
         error = 0
@@ -123,7 +127,10 @@ class ContextBarWidget(QFrame):
             if status in ("ANALYZING", "PROCESSING", "RUNNING"):
                 active += 1
 
-            elif status in ("READY", "QUEUED"):
+            elif status == "READY":
+                ready += 1
+
+            elif status == "QUEUED":
                 queued += 1
 
             elif status in ("DONE", "FINISHED", "COMPLETED"):
@@ -135,7 +142,7 @@ class ContextBarWidget(QFrame):
             elif status == "CANCELLED":
                 cancelled += 1
 
-        state, color = self._resolve_state(total, active, queued, done, error)
+        state, color = self._resolve_state(total, active, ready, queued, done, error)
 
         dot = f'<span style="color:{color};font-size:14px;">●</span>'
 
@@ -143,6 +150,7 @@ class ContextBarWidget(QFrame):
             f"{dot} {state}"
             f" | Itens: {total}"
             f" | Ativo: {active}"
+            f" | Pronto: {ready}"
             f" | Fila: {queued}"
             f" | Concluído: {done}"
             f" | Cancelado: {cancelled}"
