@@ -91,13 +91,6 @@ class ExecutionFooterWidget(QFrame):
         layout.addWidget(self.btn_exit)
 
         self.btn_clear_all.clicked.connect(self._clear_all)
-        self.btn_cancel.clicked.connect(
-            lambda: event_bridge.emit("cancel_selected_requested", None)
-        )
-        self.btn_cancel_all.clicked.connect(
-            lambda: event_bridge.emit("cancel_all_requested", None)
-        )
-
         self.btn_exit.clicked.connect(self._request_shutdown)
 
         self.setLayout(layout)
