@@ -4,7 +4,6 @@ from app.core.app_version import APP_NAME, APP_PHASE, APP_VERSION
 from app.interaction_model.event_bridge import event_bridge
 from app.interaction_model.execution_controller import execution_controller
 from app.ui.configuration_overlay import ConfigurationOverlay
-from app.ui.context_bar import SelectionActionBarWidget
 from app.ui.context_bar_widget import ContextBarWidget
 from app.ui.execution_footer import ExecutionFooterWidget
 from app.ui.file_list_container import FileListContainer
@@ -55,10 +54,10 @@ class AppShell(QWidget):
         self.base_layout.setSpacing(0)
 
         self.global_bar = GlobalBarWidget()
-        self.selection_bar = SelectionActionBarWidget()
         self.context_bar = ContextBarWidget()
 
         self.file_list_container = FileListContainer()
+        self.selection_bar = self.file_list_container.title_bar if hasattr(self.file_list_container, "title_bar") else None
         self.file_list = self.file_list_container.file_list
         self.file_list.setModel(FileListModel())
 
@@ -74,6 +73,18 @@ class AppShell(QWidget):
 
         self.selection_controller = SelectionController(self.file_list)
         execution_controller.set_context(self.file_list, self.selection_controller)
+
+        try:
+            self.file_list.selectionModel().selectionChanged.connect(
+                self._update_selection_bar_state
+            )
+        except Exception:
+            pass
+
+        self.selection_bar.btn_delete.clicked.connect(self._remove_selected_jobs)
+        self.selection_bar.btn_clear_selection.clicked.connect(
+            self.selection_controller.clear_selection
+        )
 
         self.execution_footer = ExecutionFooterWidget()
         self.global_progress = GlobalProgressWidget()
@@ -99,7 +110,6 @@ class AppShell(QWidget):
         middle_layout.setSpacing(6)
 
         middle_layout.addWidget(self.file_list_container, 1)
-        middle_layout.addWidget(self.selection_bar)
         middle_layout.addWidget(self.context_bar)
 
         main_layout.addWidget(middle_container)
@@ -142,6 +152,7 @@ class AppShell(QWidget):
         )
 
         self._update_footer_state()
+        self._update_selection_bar_state()
 
     def update_window_title(self):
         self.setWindowTitle(f"{APP_NAME} — FASE {APP_PHASE} — v{APP_VERSION}")
@@ -312,6 +323,37 @@ class AppShell(QWidget):
 
         self.execution_footer.btn_clear_all.setEnabled(not processing)
         self.execution_footer.set_processing_state(processing)
+
+
+    def _get_selected_jobs(self):
+
+        jobs = []
+        seen = set()
+
+        for index in self.file_list.selectedIndexes():
+            job = self.file_list.model().data(index, FileListModel.ROLE_JOB)
+            if not job:
+                continue
+
+            marker = id(job)
+            if marker in seen:
+                continue
+
+            seen.add(marker)
+            jobs.append(job)
+
+        return jobs
+
+    def _remove_selected_jobs(self):
+
+        for job in self._get_selected_jobs():
+            event_bridge.emit("job_remove_requested", job)
+
+    def _update_selection_bar_state(self, *args):
+
+        has_selection = bool(self._get_selected_jobs())
+        self.selection_bar.btn_delete.setEnabled(has_selection)
+        self.selection_bar.btn_clear_selection.setEnabled(has_selection)
 
     def changeEvent(self, event):
         from PySide6.QtCore import QEvent
