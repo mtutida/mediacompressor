@@ -16,6 +16,14 @@ class AssistedImportDialog(QDialog):
 
         self.files = files[:] if files else []
 
+        # defaults for optional video controls (audio-only flow)
+        self.v_compress = None
+        self.v_convert = None
+        self.v_extract = None
+        self.v_mode_video = None
+        self.v_container = None
+        self.v_profile = None
+
         self.setWindowTitle("Importação Assistida")
         self.resize(620,540)
 
@@ -159,7 +167,7 @@ class AssistedImportDialog(QDialog):
             self.a_convert.setChecked(True)
 
             self.v_mode_audio = QComboBox()
-            self.v_mode_audio.addItems(["Converter","Copiar áudio"])
+            self.v_mode_audio.addItems(["Converter","Copiar áudio","Remover áudio"])
             self.v_mode_audio.currentIndexChanged.connect(lambda i: [self.a_convert.setChecked(i==0), self.a_keep.setChecked(i==1), self.a_remove.setChecked(i==2)])
 
             ag = QButtonGroup(self)
@@ -274,6 +282,9 @@ class AssistedImportDialog(QDialog):
 
 
     def _update_output_formats(self):
+        if not self.v_extract or not self.v_container:
+            return
+
         if self.v_extract.isChecked():
             self.v_container.clear()
             self.v_container.addItems(self._audio_formats)
@@ -290,10 +301,18 @@ class AssistedImportDialog(QDialog):
             except Exception:
                 pass
 
+        video_mode = None
+        if getattr(self, "v_compress", None) and self.v_compress.isChecked():
+            video_mode = "compress"
+        elif getattr(self, "v_convert", None) and self.v_convert.isChecked():
+            video_mode = "convert"
+        elif getattr(self, "v_extract", None) and self.v_extract.isChecked():
+            video_mode = "extract"
+
         payload = {
-            "files": list(self.files),
+            "files": valid_files,
             "video": {
-                "mode": "compress" if self.v_compress.isChecked() else "convert" if self.v_convert.isChecked() else "extract" if self.v_extract.isChecked() else None,
+                "mode": video_mode,
                 "container": getattr(self, "v_container", None).currentText() if getattr(self, "v_container", None) else None,
                 "profile": getattr(self, "v_profile", None).currentText() if getattr(self, "v_profile", None) else None
             },
